@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -29,10 +30,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vladusecho.xnews.ui.theme.XNewsTheme
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.TextUnit
 import coil3.compose.AsyncImage
 import com.vladusecho.xnews.data.models.ArticleDto
@@ -45,40 +52,48 @@ fun MainScreen() {
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
 
-    when(currentState) {
-        is MainState.Content -> {
-            LazyColumn {
-                items(currentState.articles) {
-                    Article(it)
-                }
-            }
-        }
-        MainState.Initial -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(color = Color.White)
+    var text by remember { mutableStateOf("") }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = Color.White)
+    ) {
+        Column (
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = {text = it},
+                label = {Text(text = "Поиск")}
+            )
+            OutlinedButton(
+                onClick = {
+                    viewModel.loadArticles(text)
+                },
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 32.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            viewModel.loadArticles("россия и украина")
-                        },
-                    ) {
-                        Text(
-                            text = "Загрузить..."
-                        )
+                Text(
+                    text = "Загрузить..."
+                )
+            }
+            when(currentState) {
+                is MainState.Content -> {
+                    LazyColumn {
+                        items(currentState.articles) {
+                            Article(it)
+                        }
                     }
                 }
+                MainState.Initial -> {
+
+                }
+                MainState.Loading -> {
+                    CircularProgressIndicator()
+                }
             }
-        }
-        MainState.Loading -> {
-            CircularProgressIndicator()
         }
     }
 }
