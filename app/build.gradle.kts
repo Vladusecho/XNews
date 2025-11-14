@@ -45,6 +45,8 @@ android {
 
 dependencies {
 
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network)
     implementation(libs.okHttpClient)
     implementation(libs.httpLoggingInterceptor)
     implementation(libs.converter.gson)

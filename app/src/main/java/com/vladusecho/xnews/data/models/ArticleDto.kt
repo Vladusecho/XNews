@@ -13,4 +13,7 @@ data class ArticleDto(
     @SerializedName("urlToImage") val urlToImage: String,
     @SerializedName("publishedAt") val publishedAt: String,
     @SerializedName("content") val content: String
-)
+) {
+
+    fun getDate() = publishedAt.split("T")[0]
+}
