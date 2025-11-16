@@ -8,5 +8,7 @@ sealed class MainState {
 
     object Loading : MainState()
 
+    data class Error(val error: String) : MainState()
+
     data class Content(val articles: List<ArticleDto>) : MainState()
 }
