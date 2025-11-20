@@ -1,12 +1,15 @@
 package com.vladusecho.xnews.presentation
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +19,7 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
@@ -32,12 +36,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.vladusecho.xnews.R
@@ -62,7 +72,6 @@ fun MainScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(color = Color.White)
-            .padding(top = 20.dp)
     ) {
         Column(
             modifier = Modifier
@@ -83,9 +92,7 @@ fun MainScreen() {
                     modifier = Modifier
                         .size(58.dp)
                         .clip(RoundedCornerShape(50))
-                        .clickable(
-                            enabled = true
-                        ) {
+                        .clickable {
                             viewModel.loadArticles(text)
                         },
                     contentDescription = null,
@@ -123,14 +130,6 @@ fun MainScreen() {
                             .fillMaxSize(),
                         contentAlignment = Alignment.BottomCenter
                     ) {
-//                        Snackbar(
-//                            modifier = Modifier
-//                                .padding(horizontal = 10.dp, vertical = 30.dp),
-//                            contentColor = Color.Black,
-//                            containerColor = Color.LightGray
-//                        ) {
-//                            Text(text = currentState.error)
-//                        }
                         SnackbarHost(
                             hostState = snackbarHostState,
                             modifier = Modifier
@@ -163,27 +162,50 @@ private fun Article(
     Box(
         modifier = Modifier
             .padding(16.dp)
-            .clip(CircleShape.copy(CornerSize(7.dp)))
-            .background(Color.Gray.copy(alpha = 0.3F))
-            .padding(5.dp)
+            .shadow(
+                elevation = 8.dp,
+                shape = MaterialTheme.shapes.medium,
+                clip = true
+            )
+            .clip(CircleShape.copy(CornerSize(13.dp)))
+            .background(Color.White)
     ) {
-        Column(
-        ) {
-            Text(
-                text = article.getDate()
-            )
-            Text(
-                text = article.title
-            )
+        Column{
             AsyncImage(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize(),
                 model = article.urlToImage,
                 contentDescription = null,
                 contentScale = ContentScale.FillWidth
             )
-            Text(text = article.description)
+//            Image(
+//                painter = painterResource(R.drawable.img_post_example),
+//                contentDescription = null
+//            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 15.dp)
+            ) {
+                Text(
+                    text = article.getDateWithAuthor(),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraLight
+                )
+                Spacer(modifier = Modifier.height(5.dp))
+                Text(
+                    text = article.title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(5.dp))
+                Text(
+                    text = article.description,
+                    fontWeight = FontWeight.Light
+                )
+                Spacer(modifier = Modifier.height(15.dp))
+            }
         }
-
     }
 }
 
@@ -194,3 +216,24 @@ private fun MainScreenPreview() {
         MainScreen()
     }
 }
+
+//@Preview
+//@Composable
+//private fun ArticlePreview() {
+//    Box(
+//        modifier = Modifier.fillMaxSize()
+//            .background(Color.White),
+//    ) {
+//
+//    }
+//    Article(ArticleDto(
+//        1,
+//        "vlad",
+//        "Inside a Wild Bitcoin Heist: Five-Star Hotels, Cash-Stuffed Envelopes, and Vanishing Funds",
+//        "Sophisticated crypto scams are on the rise. But few of them go to the lengths one bitcoin mining executive experienced earlier this year.",
+//        "https://www.wired.com/story/bitcoin-scam-mining-as-service/",
+//        "https://gizmodo.com/app/uploads/2024/04/0ddbd47a359dbefbb14c16d0ffe99a95.jpg",
+//        "2025-11-17T10:00:00Z",
+//        ""
+//    ))
+//}
