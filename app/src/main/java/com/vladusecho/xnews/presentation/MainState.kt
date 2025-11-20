@@ -1,6 +1,6 @@
 package com.vladusecho.xnews.presentation
 
-import com.vladusecho.xnews.data.models.ArticleDto
+import com.vladusecho.xnews.domain.models.Article
 
 sealed class MainState {
 
@@ -10,5 +10,5 @@ sealed class MainState {
 
     data class Error(val error: String) : MainState()
 
-    data class Content(val articles: List<ArticleDto>) : MainState()
+    data class Content(val articles: List<Article>) : MainState()
 }

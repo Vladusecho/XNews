@@ -1,16 +1,17 @@
 package com.vladusecho.xnews.presentation
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vladusecho.xnews.data.remote.ApiFactory
+import com.vladusecho.xnews.data.repository.ArticlesRepositoryImpl
+import com.vladusecho.xnews.domain.usecases.LoadArticlesUseCase
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class MainViewModel : ViewModel() {
+    private val repository = ArticlesRepositoryImpl
+    private val loadArticlesUseCase = LoadArticlesUseCase(repository)
 
     private val _state = MutableStateFlow<MainState>(MainState.Initial)
     val state
@@ -24,7 +25,7 @@ class MainViewModel : ViewModel() {
         _state.value = MainState.Loading
         viewModelScope.launch(exceptionHandler) {
             _state.value = MainState.Content(
-                ApiFactory.apiService.getArticles(query).articles
+                loadArticlesUseCase(query)
             )
         }
     }
