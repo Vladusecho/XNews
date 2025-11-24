@@ -2,8 +2,10 @@ package com.vladusecho.xnews.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,7 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
@@ -19,7 +24,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -39,24 +48,85 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.compose.currentBackStackEntryAsState
 import coil3.compose.AsyncImage
 import com.vladusecho.xnews.R
 import com.vladusecho.xnews.domain.models.Article
+import com.vladusecho.xnews.domain.navigation.AppNavGraph
+import com.vladusecho.xnews.domain.navigation.MyNavigationItem
+import com.vladusecho.xnews.domain.navigation.rememberNavState
 import com.vladusecho.xnews.ui.theme.XNewsTheme
 
 @Composable
 fun MainScreen() {
 
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-    var showSnackbar by remember { mutableStateOf(false) }
+    val navState = rememberNavState()
 
     val viewModel: MainViewModel = viewModel()
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar(
+                modifier = Modifier
+                    .height(70.dp)
+            ) {
+                val navBackStackEntry by navState.navHostController.currentBackStackEntryAsState()
+                val items = listOf(
+                    MyNavigationItem.Home,
+                    MyNavigationItem.Favorite,
+                    MyNavigationItem.Profile
+                )
+                items.forEach { item ->
+                    val selected = navBackStackEntry?.destination?.hierarchy?.any {
+                        it.route == item.screen.route
+                    } ?: false
+
+                    NavigationBarItem(
+                        selected = selected,
+                        onClick = {
+                            if (!selected) {
+                                navState.navigateTo(item.screen.route)
+                            }
+                        },
+                        icon = {
+                            Icon(item.icon, null)
+                        },
+                        label = {
+                            Text(item.title)
+                        }
+                    )
+                }
+            }
+        }
+    ) { paddingValues ->
+        AppNavGraph(
+            navState.navHostController,
+            homeScreenContent = {
+                HomeScreenContent(
+                    paddingValues,
+                    viewModel
+                )
+            },
+            favoriteScreenContent = { Text("favorite") },
+            profileScreenContent = { Text("profile") }
+        )
+    }
+}
+
+@Composable
+private fun HomeScreenContent(
+    paddingValues: PaddingValues,
+    viewModel: MainViewModel
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    var showSnackbar by remember { mutableStateOf(false) }
 
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
@@ -67,90 +137,144 @@ fun MainScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(color = Color.White)
-            .padding(top = 32.dp)
+            .padding(paddingValues)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                verticalAlignment = Alignment.Bottom
-            ) {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    label = { Text(text = "Введите запрос") }
-                )
+        when (currentState) {
+            is MainState.Content -> {
+                LazyColumnWithSearchBar(
+                    viewModel,
+                    text,
+                    { text = it }
+                ) {
+                    items(currentState.articles) {
+                        Article(it)
+                    }
+                }
+            }
 
-                Icon(
-                    modifier = Modifier
-                        .size(58.dp)
-                        .clip(RoundedCornerShape(50))
-                        .clickable {
-                            viewModel.loadArticles(text)
-                        },
-                    contentDescription = null,
-                    painter = painterResource(R.drawable.ic_search),
-                    tint = Color.Unspecified
+            MainState.Initial -> {
+                LazyColumnWithSearchBar(
+                    viewModel,
+                    text,
+                    { text = it }
                 )
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            when (currentState) {
-                is MainState.Content -> {
-                    LazyColumn {
-                        items(currentState.articles) {
-                            Article(it)
-                        }
-                    }
-                }
 
-                MainState.Initial -> {
-
-                }
-
-                MainState.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-
-                is MainState.Error -> {
-                    showSnackbar = true
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        SnackbarHost(
-                            hostState = snackbarHostState,
+            MainState.Loading -> {
+                LazyColumnWithSearchBar(
+                    viewModel,
+                    text,
+                    { text = it }
+                ) {
+                    item {
+                        Box(
                             modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(11.dp)
+                                .fillMaxSize()
+                                .padding(top = 10.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Snackbar(
-                                it,
-                                contentColor = Color.Black, containerColor = Color.Cyan
-                            )
+                            CircularProgressIndicator()
                         }
-                        LaunchedEffect(showSnackbar) {
-                            if (showSnackbar) {
-                                snackbarHostState.showSnackbar(currentState.error)
-                                showSnackbar = false
+                    }
+                }
+            }
+
+            is MainState.Error -> {
+                LazyColumn {
+                    item {
+                        SearchBar(
+                            viewModel, text
+                        ) {
+                            text = it
+                        }
+                    }
+                    item {
+                        showSnackbar = true
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            contentAlignment = Alignment.BottomCenter
+                        ) {
+                            SnackbarHost(
+                                hostState = snackbarHostState,
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(11.dp)
+                            ) {
+                                Snackbar(
+                                    it,
+                                    contentColor = Color.Black, containerColor = Color.Cyan
+                                )
+                            }
+                            LaunchedEffect(showSnackbar) {
+                                if (showSnackbar) {
+                                    snackbarHostState.showSnackbar(currentState.error)
+                                    showSnackbar = false
+                                }
                             }
                         }
                     }
-
                 }
             }
         }
     }
 }
 
+@Composable
+private fun LazyColumnWithSearchBar(
+    viewModel: MainViewModel,
+    text: String,
+    onValueChange: (String) -> Unit,
+    newItem: LazyListScope.() -> Unit = {}
+) {
+    LazyColumn {
+        item {
+            SearchBar(
+                viewModel, text
+            ) {
+                onValueChange(it)
+            }
+        }
+        newItem()
+    }
+}
+
+@Composable
+private fun SearchBar(
+    viewModel: MainViewModel,
+    text: String,
+    onValueChange: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = { onValueChange(it) },
+            label = { Text(text = "Введите запрос") }
+        )
+        Spacer(Modifier.width(7.dp))
+        Icon(
+            modifier = Modifier
+                .size(56.5.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .clickable {
+                    viewModel.loadArticles(text)
+                }
+//                        .border(
+//                            BorderStroke(1.08.dp, Color(0xff80828a)),
+//                            shape = RoundedCornerShape(4.dp)
+//                        )
+                .background(Color(0xffeeedf6)),
+            contentDescription = null,
+            painter = painterResource(R.drawable.ic_search),
+            tint = Color.Unspecified
+        )
+    }
+}
 
 @Composable
 private fun Article(
@@ -171,7 +295,7 @@ private fun Article(
             AsyncImage(
                 modifier = Modifier
                     .fillMaxSize(),
-                model = article.urlToImage,
+                model = article.urlToImage ?: "",
                 contentDescription = null,
                 contentScale = ContentScale.FillWidth
             )

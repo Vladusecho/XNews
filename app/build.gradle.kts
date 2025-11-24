@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.okHttpClient)
     implementation(libs.httpLoggingInterceptor)
     implementation(libs.converter.gson)
+    implementation(libs.navigation.compose)
     implementation(libs.gson)
     implementation(libs.retrofit)
     implementation(libs.androidx.core.ktx)
