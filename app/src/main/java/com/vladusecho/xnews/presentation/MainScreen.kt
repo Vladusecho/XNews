@@ -1,6 +1,9 @@
 package com.vladusecho.xnews.presentation
 
+import android.content.Intent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,31 +18,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,12 +50,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -61,21 +65,38 @@ import com.vladusecho.xnews.R
 import com.vladusecho.xnews.domain.models.Article
 import com.vladusecho.xnews.domain.navigation.AppNavGraph
 import com.vladusecho.xnews.domain.navigation.MyNavigationItem
+import com.vladusecho.xnews.domain.navigation.Screen
 import com.vladusecho.xnews.domain.navigation.rememberNavState
 import com.vladusecho.xnews.ui.theme.XNewsTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
 
     val navState = rememberNavState()
 
-    val viewModel: MainViewModel = viewModel()
-
     Scaffold(
+        topBar = {
+            val currentRoute = navState.navHostController.currentBackStackEntryAsState().value?.destination?.route
+            val title = when (currentRoute) {
+                Screen.ROUTE_HOME -> "XNews"
+                Screen.ROUTE_PROFILE -> "Профиль"
+                Screen.ROUTE_FAVORITE -> "Избранное"
+                else -> "Error"
+            }
+            TopAppBar(
+                title = {
+                    Text(title)
+                },
+                colors = TopAppBarDefaults.topAppBarColors()
+                    .copy(containerColor = MaterialTheme.colorScheme.background)
+            )
+        },
         bottomBar = {
             NavigationBar(
+                containerColor = MaterialTheme.colorScheme.background,
                 modifier = Modifier
-                    .height(70.dp)
+                    .height(80.dp)
             ) {
                 val navBackStackEntry by navState.navHostController.currentBackStackEntryAsState()
                 val items = listOf(
@@ -110,8 +131,7 @@ fun MainScreen() {
             navState.navHostController,
             homeScreenContent = {
                 HomeScreenContent(
-                    paddingValues,
-                    viewModel
+                    paddingValues
                 )
             },
             favoriteScreenContent = { Text("favorite") },
@@ -122,50 +142,78 @@ fun MainScreen() {
 
 @Composable
 private fun HomeScreenContent(
-    paddingValues: PaddingValues,
-    viewModel: MainViewModel
+    paddingValues: PaddingValues
+) {
+    LazyColumnWithSearchBar(paddingValues)
+}
+
+@Composable
+private fun ShowSnackbar(
+    textError: String
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    var showSnackbar by remember { mutableStateOf(false) }
+    var showSnackbar by remember { mutableStateOf(true) }
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(7.dp)
+        ) {
+            Snackbar(
+                it,
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground
+            )
+        }
+        LaunchedEffect(showSnackbar) {
+            if (showSnackbar) {
+                snackbarHostState.showSnackbar(textError)
+                showSnackbar = false
+            }
+        }
+    }
+}
 
+@Composable
+private fun LazyColumnWithSearchBar(
+    paddingValues: PaddingValues
+) {
+    val viewModel: MainViewModel = viewModel()
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
-
-    var text by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(color = Color.White)
+            .background(color = MaterialTheme.colorScheme.onSecondary)
             .padding(paddingValues)
+            .border(BorderStroke(0.5.dp, MaterialTheme.colorScheme.onSecondary))
     ) {
-        when (currentState) {
-            is MainState.Content -> {
-                LazyColumnWithSearchBar(
-                    viewModel,
-                    text,
-                    { text = it }
-                ) {
+        LazyColumn {
+            item {
+                MySearchBar()
+            }
+            when (currentState) {
+                is MainState.Content -> {
                     items(currentState.articles) {
                         Article(it)
                     }
                 }
-            }
 
-            MainState.Initial -> {
-                LazyColumnWithSearchBar(
-                    viewModel,
-                    text,
-                    { text = it }
-                )
-            }
+                is MainState.Error ->
+                    item {
+                        ShowSnackbar(currentState.error)
+                    }
 
-            MainState.Loading -> {
-                LazyColumnWithSearchBar(
-                    viewModel,
-                    text,
-                    { text = it }
-                ) {
+                MainState.Initial -> {
+
+                }
+                MainState.Loading -> {
                     item {
                         Box(
                             modifier = Modifier
@@ -178,83 +226,31 @@ private fun HomeScreenContent(
                     }
                 }
             }
-
-            is MainState.Error -> {
-                LazyColumn {
-                    item {
-                        SearchBar(
-                            viewModel, text
-                        ) {
-                            text = it
-                        }
-                    }
-                    item {
-                        showSnackbar = true
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize(),
-                            contentAlignment = Alignment.BottomCenter
-                        ) {
-                            SnackbarHost(
-                                hostState = snackbarHostState,
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(11.dp)
-                            ) {
-                                Snackbar(
-                                    it,
-                                    contentColor = Color.Black, containerColor = Color.Cyan
-                                )
-                            }
-                            LaunchedEffect(showSnackbar) {
-                                if (showSnackbar) {
-                                    snackbarHostState.showSnackbar(currentState.error)
-                                    showSnackbar = false
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
 
 @Composable
-private fun LazyColumnWithSearchBar(
-    viewModel: MainViewModel,
-    text: String,
-    onValueChange: (String) -> Unit,
-    newItem: LazyListScope.() -> Unit = {}
-) {
-    LazyColumn {
-        item {
-            SearchBar(
-                viewModel, text
-            ) {
-                onValueChange(it)
-            }
-        }
-        newItem()
-    }
-}
-
-@Composable
-private fun SearchBar(
-    viewModel: MainViewModel,
-    text: String,
-    onValueChange: (String) -> Unit
-) {
+private fun MySearchBar() {
+    val viewModel: MainViewModel = viewModel()
+    var text by remember { mutableStateOf("") }
     Row(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.Center
     ) {
-        OutlinedTextField(
+        TextField(
             value = text,
-            onValueChange = { onValueChange(it) },
-            label = { Text(text = "Введите запрос") }
+            onValueChange = { text = it },
+            label = { Text(text = "Введите запрос") },
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = MaterialTheme.colorScheme.background,
+                unfocusedBorderColor = Color.Transparent,
+                focusedContainerColor = MaterialTheme.colorScheme.background
+            ),
+            singleLine = true
         )
         Spacer(Modifier.width(7.dp))
         Icon(
@@ -264,11 +260,7 @@ private fun SearchBar(
                 .clickable {
                     viewModel.loadArticles(text)
                 }
-//                        .border(
-//                            BorderStroke(1.08.dp, Color(0xff80828a)),
-//                            shape = RoundedCornerShape(4.dp)
-//                        )
-                .background(Color(0xffeeedf6)),
+                .background(MaterialTheme.colorScheme.background),
             contentDescription = null,
             painter = painterResource(R.drawable.ic_search),
             tint = Color.Unspecified
@@ -280,6 +272,9 @@ private fun SearchBar(
 private fun Article(
     article: Article
 ) {
+
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .padding(16.dp)
@@ -289,7 +284,11 @@ private fun Article(
                 clip = true
             )
             .clip(CircleShape.copy(CornerSize(13.dp)))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
+            .clickable {
+                val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
+                context.startActivity(intent)
+            }
     ) {
         Column {
             AsyncImage(
@@ -333,7 +332,7 @@ private fun Article(
 @Preview
 @Composable
 private fun MainScreenPreview() {
-    XNewsTheme {
+    XNewsTheme(darkTheme = false) {
         MainScreen()
     }
 }
