@@ -32,6 +32,7 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 #Navigation
 navigation-compose = {group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation_version"}
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+icons = { group = "androidx.compose.material", name = "material-icons-extended"}
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

@@ -45,6 +45,7 @@ android {
 
 dependencies {
 
+    implementation(libs.icons)
     implementation(libs.coil.compose)
     implementation(libs.coil.network)
     implementation(libs.okHttpClient)

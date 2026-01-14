@@ -1,4 +1,4 @@
-package com.vladusecho.xnews.presentation
+package com.vladusecho.xnews.presentation.screen
 
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,12 +45,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -67,6 +71,9 @@ import com.vladusecho.xnews.domain.navigation.AppNavGraph
 import com.vladusecho.xnews.domain.navigation.MyNavigationItem
 import com.vladusecho.xnews.domain.navigation.Screen
 import com.vladusecho.xnews.domain.navigation.rememberNavState
+import com.vladusecho.xnews.presentation.ImgState
+import com.vladusecho.xnews.presentation.MainState
+import com.vladusecho.xnews.presentation.MainViewModel
 import com.vladusecho.xnews.ui.theme.XNewsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,7 +84,8 @@ fun MainScreen() {
 
     Scaffold(
         topBar = {
-            val currentRoute = navState.navHostController.currentBackStackEntryAsState().value?.destination?.route
+            val currentRoute =
+                navState.navHostController.currentBackStackEntryAsState().value?.destination?.route
             val title = when (currentRoute) {
                 Screen.ROUTE_HOME -> "XNews"
                 Screen.ROUTE_PROFILE -> "Профиль"
@@ -94,9 +102,7 @@ fun MainScreen() {
         },
         bottomBar = {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.background,
-                modifier = Modifier
-                    .height(80.dp)
+                containerColor = MaterialTheme.colorScheme.background
             ) {
                 val navBackStackEntry by navState.navHostController.currentBackStackEntryAsState()
                 val items = listOf(
@@ -134,7 +140,9 @@ fun MainScreen() {
                     paddingValues
                 )
             },
-            favoriteScreenContent = { Text("favorite") },
+            favoriteScreenContent = {
+                FavouriteScreen()
+            },
             profileScreenContent = { Text("profile") }
         )
     }
@@ -200,7 +208,7 @@ private fun LazyColumnWithSearchBar(
             }
             when (currentState) {
                 is MainState.Content -> {
-                    items(currentState.articles) {
+                    items(items = currentState.articles) {
                         Article(it)
                     }
                 }
@@ -213,6 +221,7 @@ private fun LazyColumnWithSearchBar(
                 MainState.Initial -> {
 
                 }
+
                 MainState.Loading -> {
                     item {
                         Box(
@@ -232,8 +241,11 @@ private fun LazyColumnWithSearchBar(
 
 @Composable
 private fun MySearchBar() {
+
     val viewModel: MainViewModel = viewModel()
-    var text by remember { mutableStateOf("") }
+
+    val searchQuery = viewModel.searchQuery.collectAsState()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -242,8 +254,10 @@ private fun MySearchBar() {
         horizontalArrangement = Arrangement.Center
     ) {
         TextField(
-            value = text,
-            onValueChange = { text = it },
+            value = searchQuery.value,
+            onValueChange = { query ->
+                viewModel.onSearchQueryChanged(query)
+            },
             label = { Text(text = "Введите запрос") },
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedContainerColor = MaterialTheme.colorScheme.background,
@@ -258,7 +272,7 @@ private fun MySearchBar() {
                 .size(56.5.dp)
                 .clip(RoundedCornerShape(4.dp))
                 .clickable {
-                    viewModel.loadArticles(text)
+                    viewModel.performSearch(searchQuery.value)
                 }
                 .background(MaterialTheme.colorScheme.background),
             contentDescription = null,
@@ -273,6 +287,7 @@ private fun Article(
     article: Article
 ) {
 
+    var isLoading : ImgState by remember { mutableStateOf(ImgState.Initial) }
     val context = LocalContext.current
 
     Box(
@@ -291,13 +306,48 @@ private fun Article(
             }
     ) {
         Column {
+
+            when(isLoading){
+                ImgState.Initial -> {}
+                ImgState.LoadedImg -> {}
+                ImgState.LoadingImg -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().height(140.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                ImgState.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().height(140.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Error,
+                            contentDescription = ""
+                        )
+                    }
+                }
+            }
+
             AsyncImage(
                 modifier = Modifier
                     .fillMaxSize(),
                 model = article.urlToImage ?: "",
                 contentDescription = null,
-                contentScale = ContentScale.FillWidth
+                contentScale = ContentScale.FillWidth,
+                onLoading = {
+                    isLoading = ImgState.LoadingImg
+                },
+                onSuccess = {
+                    isLoading = ImgState.LoadedImg
+                },
+                onError = {
+                    isLoading = ImgState.Error
+                }
             )
+
 //            Image(
 //                painter = painterResource(R.drawable.img_post_example),
 //                contentDescription = null
