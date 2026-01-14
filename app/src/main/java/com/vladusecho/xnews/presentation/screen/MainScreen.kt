@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -78,7 +79,7 @@ import com.vladusecho.xnews.ui.theme.XNewsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(viewModel: MainViewModel) {
 
     val navState = rememberNavState()
 
@@ -137,11 +138,13 @@ fun MainScreen() {
             navState.navHostController,
             homeScreenContent = {
                 HomeScreenContent(
-                    paddingValues
+                    paddingValues, viewModel
                 )
             },
             favoriteScreenContent = {
-                FavouriteScreen()
+                FavouriteScreen(
+                    paddingValues, viewModel
+                )
             },
             profileScreenContent = { Text("profile") }
         )
@@ -150,9 +153,10 @@ fun MainScreen() {
 
 @Composable
 private fun HomeScreenContent(
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    viewModel: MainViewModel
 ) {
-    LazyColumnWithSearchBar(paddingValues)
+    LazyColumnWithSearchBar(paddingValues, viewModel)
 }
 
 @Composable
@@ -189,9 +193,9 @@ private fun ShowSnackbar(
 
 @Composable
 private fun LazyColumnWithSearchBar(
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    viewModel: MainViewModel
 ) {
-    val viewModel: MainViewModel = viewModel()
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
 
@@ -204,12 +208,14 @@ private fun LazyColumnWithSearchBar(
     ) {
         LazyColumn {
             item {
-                MySearchBar()
+                MySearchBar(viewModel)
             }
             when (currentState) {
                 is MainState.Content -> {
                     items(items = currentState.articles) {
-                        Article(it)
+                        Article(it) {
+                            viewModel.addToFavourite(it)
+                        }
                     }
                 }
 
@@ -240,9 +246,9 @@ private fun LazyColumnWithSearchBar(
 }
 
 @Composable
-private fun MySearchBar() {
-
-    val viewModel: MainViewModel = viewModel()
+private fun MySearchBar(
+    viewModel: MainViewModel
+) {
 
     val searchQuery = viewModel.searchQuery.collectAsState()
 
@@ -283,8 +289,9 @@ private fun MySearchBar() {
 }
 
 @Composable
-private fun Article(
-    article: Article
+fun Article(
+    article: Article,
+    onLongClick: () -> Unit
 ) {
 
     var isLoading : ImgState by remember { mutableStateOf(ImgState.Initial) }
@@ -300,10 +307,15 @@ private fun Article(
             )
             .clip(CircleShape.copy(CornerSize(13.dp)))
             .background(MaterialTheme.colorScheme.background)
-            .clickable {
-                val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
-                context.startActivity(intent)
-            }
+            .combinedClickable(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
+                    context.startActivity(intent)
+                },
+                onLongClick = {
+                    onLongClick()
+                }
+            )
     ) {
         Column {
 
@@ -379,13 +391,13 @@ private fun Article(
     }
 }
 
-@Preview
-@Composable
-private fun MainScreenPreview() {
-    XNewsTheme(darkTheme = false) {
-        MainScreen()
-    }
-}
+//@Preview
+//@Composable
+//private fun MainScreenPreview() {
+//    XNewsTheme(darkTheme = false) {
+//        MainScreen()
+//    }
+//}
 
 //@Preview
 //@Composable

@@ -1,23 +1,32 @@
 package com.vladusecho.xnews.presentation
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vladusecho.xnews.data.repository.ArticlesRepositoryImpl
+import com.vladusecho.xnews.domain.models.Article
+import com.vladusecho.xnews.domain.repository.ArticlesRepository
 import com.vladusecho.xnews.domain.usecases.LoadArticlesUseCase
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
-class MainViewModel : ViewModel() {
-    private val repository = ArticlesRepositoryImpl
-    private val loadArticlesUseCase = LoadArticlesUseCase(repository)
+class MainViewModel @Inject constructor(
+    private val repository: ArticlesRepository
+) : ViewModel() {
+
 
     private val _state = MutableStateFlow<MainState>(MainState.Initial)
     val state
@@ -53,7 +62,7 @@ class MainViewModel : ViewModel() {
         _state.value = MainState.Loading
         viewModelScope.launch(exceptionHandler) {
             _state.value = MainState.Content(
-                loadArticlesUseCase(query)
+                repository.loadArticles(query)
             )
         }
     }
@@ -63,5 +72,21 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             searchQueryChannel.send(query)
         }
+    }
+
+    fun addToFavourite(article: Article) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.addToFavourite(article)
+        }
+    }
+
+    fun deleteFromFavourite(articleId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.deleteFromFavourite(articleId)
+        }
+    }
+
+    fun getFavouriteArticles(): Flow<List<Article>> {
+        return repository.favouriteArticles
     }
 }

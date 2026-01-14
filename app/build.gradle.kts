@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -45,6 +46,10 @@ android {
 
 dependencies {
 
+    implementation(libs.dagger.core)
+    ksp(libs.dagger.compiler)
+    implementation(libs.room.core)
+    ksp(libs.room.compiler)
     implementation(libs.icons)
     implementation(libs.coil.compose)
     implementation(libs.coil.network)
