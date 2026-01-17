@@ -1,13 +1,9 @@
 package com.vladusecho.xnews.presentation
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vladusecho.xnews.data.repository.ArticlesRepositoryImpl
 import com.vladusecho.xnews.domain.models.Article
 import com.vladusecho.xnews.domain.repository.ArticlesRepository
-import com.vladusecho.xnews.domain.usecases.LoadArticlesUseCase
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -18,7 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -42,6 +37,27 @@ class MainViewModel @Inject constructor(
     val searchQuery
         get() = _searchQuery.asStateFlow()
 
+
+    private val _unseenNews = MutableStateFlow(0)
+    val unseenNews
+        get() = _unseenNews.asStateFlow()
+
+    private val _isWatchedFavourite = MutableStateFlow(false)
+    val isWatchedFavourite
+        get() = _isWatchedFavourite
+
+    fun incrementNewFavouriteCount() {
+        _unseenNews.value = _unseenNews.value + 1
+    }
+
+    fun invisibleCounter() {
+        _isWatchedFavourite.value = true
+    }
+
+    fun visibleCounter() {
+        _unseenNews.value = 0
+        _isWatchedFavourite.value = false
+    }
 
     init {
         viewModelScope.launch {

@@ -1,20 +1,23 @@
 package com.vladusecho.xnews.presentation.screen
 
+import android.R.attr.text
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,16 +26,27 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -44,27 +58,32 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.room.util.query
 import coil3.compose.AsyncImage
 import com.vladusecho.xnews.R
 import com.vladusecho.xnews.domain.models.Article
@@ -75,7 +94,6 @@ import com.vladusecho.xnews.domain.navigation.rememberNavState
 import com.vladusecho.xnews.presentation.ImgState
 import com.vladusecho.xnews.presentation.MainState
 import com.vladusecho.xnews.presentation.MainViewModel
-import com.vladusecho.xnews.ui.theme.XNewsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,23 +102,6 @@ fun MainScreen(viewModel: MainViewModel) {
     val navState = rememberNavState()
 
     Scaffold(
-        topBar = {
-            val currentRoute =
-                navState.navHostController.currentBackStackEntryAsState().value?.destination?.route
-            val title = when (currentRoute) {
-                Screen.ROUTE_HOME -> "XNews"
-                Screen.ROUTE_PROFILE -> "Профиль"
-                Screen.ROUTE_FAVORITE -> "Избранное"
-                else -> "Error"
-            }
-            TopAppBar(
-                title = {
-                    Text(title)
-                },
-                colors = TopAppBarDefaults.topAppBarColors()
-                    .copy(containerColor = MaterialTheme.colorScheme.background)
-            )
-        },
         bottomBar = {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.background
@@ -111,6 +112,12 @@ fun MainScreen(viewModel: MainViewModel) {
                     MyNavigationItem.Favorite,
                     MyNavigationItem.Profile
                 )
+
+                val unseenNewsState = viewModel.unseenNews.collectAsState()
+                val unseenNews = unseenNewsState.value
+                val isWatchedFavouriteState = viewModel.isWatchedFavourite.collectAsState()
+                val isWatchedFavourite = isWatchedFavouriteState.value
+
                 items.forEach { item ->
                     val selected = navBackStackEntry?.destination?.hierarchy?.any {
                         it.route == item.screen.route
@@ -122,13 +129,34 @@ fun MainScreen(viewModel: MainViewModel) {
                             if (!selected) {
                                 navState.navigateTo(item.screen.route)
                             }
+                            if (item.screen.route == Screen.ROUTE_FAVORITE) {
+                                viewModel.invisibleCounter()
+                            }
+                            if (item.screen.route == Screen.ROUTE_HOME) {
+                                viewModel.visibleCounter()
+                            }
                         },
                         icon = {
-                            Icon(item.icon, null)
+                            BadgedBox(
+                                badge = {
+                                    if (!isWatchedFavourite) {
+                                        if (unseenNews > 0 && item.screen.route == Screen.ROUTE_FAVORITE) {
+                                            Badge {
+                                                Text("$unseenNews")
+                                            }
+                                        }
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = item.icon,
+                                    null
+                                )
+                            }
                         },
                         label = {
                             Text(item.title)
-                        }
+                        },
                     )
                 }
             }
@@ -191,6 +219,7 @@ private fun ShowSnackbar(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LazyColumnWithSearchBar(
     paddingValues: PaddingValues,
@@ -198,6 +227,9 @@ private fun LazyColumnWithSearchBar(
 ) {
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
+
+    val searchQueryState = viewModel.searchQuery.collectAsState()
+    val searchQuery = searchQueryState.value
 
     Box(
         modifier = Modifier
@@ -208,13 +240,44 @@ private fun LazyColumnWithSearchBar(
     ) {
         LazyColumn {
             item {
-                MySearchBar(viewModel)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp, horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("XNews",
+                        style = MaterialTheme.typography.headlineLarge)
+                    Text("Developed by Vladusecho <3",
+                        style = MaterialTheme.typography.labelSmall)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = { query ->
+                            viewModel.onSearchQueryChanged(query)
+                        },
+                        label = { Text(text = "Введите запрос") },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = MaterialTheme.colorScheme.background,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedContainerColor = MaterialTheme.colorScheme.background,
+                        ),
+                        singleLine = true
+                    )
+                }
             }
             when (currentState) {
                 is MainState.Content -> {
                     items(items = currentState.articles) {
-                        Article(it) {
-                            viewModel.addToFavourite(it)
+                        Box(
+                            modifier = Modifier.animateItem()
+                        ) {
+                            MySwipeToAddFavourite(
+                                article = it
+                            ) {
+                                viewModel.addToFavourite(it)
+                                viewModel.incrementNewFavouriteCount()
+                            }
                         }
                     }
                 }
@@ -246,93 +309,49 @@ private fun LazyColumnWithSearchBar(
 }
 
 @Composable
-private fun MySearchBar(
-    viewModel: MainViewModel
-) {
-
-    val searchQuery = viewModel.searchQuery.collectAsState()
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        TextField(
-            value = searchQuery.value,
-            onValueChange = { query ->
-                viewModel.onSearchQueryChanged(query)
-            },
-            label = { Text(text = "Введите запрос") },
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = MaterialTheme.colorScheme.background,
-                unfocusedBorderColor = Color.Transparent,
-                focusedContainerColor = MaterialTheme.colorScheme.background
-            ),
-            singleLine = true
-        )
-        Spacer(Modifier.width(7.dp))
-        Icon(
-            modifier = Modifier
-                .size(56.5.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .clickable {
-                    viewModel.performSearch(searchQuery.value)
-                }
-                .background(MaterialTheme.colorScheme.background),
-            contentDescription = null,
-            painter = painterResource(R.drawable.ic_search),
-            tint = Color.Unspecified
-        )
-    }
-}
-
-@Composable
 fun Article(
-    article: Article,
-    onLongClick: () -> Unit
+    modifier: Modifier = Modifier,
+    article: Article
 ) {
 
-    var isLoading : ImgState by remember { mutableStateOf(ImgState.Initial) }
+    var isLoading: ImgState by remember { mutableStateOf(ImgState.Initial) }
     val context = LocalContext.current
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .padding(16.dp)
             .shadow(
                 elevation = 8.dp,
                 shape = MaterialTheme.shapes.medium,
                 clip = true
             )
-            .clip(CircleShape.copy(CornerSize(13.dp)))
+            .clip(CircleShape.copy(CornerSize(10.dp)))
             .background(MaterialTheme.colorScheme.background)
-            .combinedClickable(
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
-                    context.startActivity(intent)
-                },
-                onLongClick = {
-                    onLongClick()
-                }
-            )
+            .clickable {
+                val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
+                context.startActivity(intent)
+            },
     ) {
         Column {
-
-            when(isLoading){
+            when (isLoading) {
                 ImgState.Initial -> {}
                 ImgState.LoadedImg -> {}
                 ImgState.LoadingImg -> {
                     Box(
-                        modifier = Modifier.fillMaxSize().height(140.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .height(140.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator()
                     }
                 }
+
                 ImgState.Error -> {
                     Box(
-                        modifier = Modifier.fillMaxSize().height(140.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .height(140.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -387,6 +406,62 @@ fun Article(
                 )
                 Spacer(modifier = Modifier.height(15.dp))
             }
+        }
+    }
+}
+
+@Composable
+fun MySwipeToAddFavourite(
+    article: Article,
+    onSave: () -> Unit
+) {
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var itemWidth by remember { mutableFloatStateOf(0f) }
+    val saveThreshold = remember(itemWidth) { itemWidth * 0.17f }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onSizeChanged { itemWidth = it.width.toFloat() },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+                .padding(16.dp)
+                .clip(CircleShape.copy(CornerSize(10.dp)))
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            Icon(
+                Icons.Default.Favorite,
+                "Добавить в избранное",
+                modifier = Modifier.padding(end = 20.dp)
+            )
+        }
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(offsetX.toInt(), 0) }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, dragAmount ->
+                            offsetX =
+                                (offsetX + dragAmount).coerceIn(-itemWidth + itemWidth * 0.8f, 0F)
+                            change.consume()
+                        },
+                        onDragEnd = {
+                            if (-offsetX > saveThreshold) {
+                                onSave()
+                                offsetX = 0F
+                            } else {
+                                offsetX = 0f
+                            }
+                        }
+                    )
+                }
+        ) {
+            Article(article = article)
         }
     }
 }
