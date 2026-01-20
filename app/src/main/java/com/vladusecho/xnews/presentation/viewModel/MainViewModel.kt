@@ -1,9 +1,12 @@
-package com.vladusecho.xnews.presentation
+package com.vladusecho.xnews.presentation.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vladusecho.xnews.domain.models.Article
 import com.vladusecho.xnews.domain.repository.ArticlesRepository
+import com.vladusecho.xnews.domain.usecases.AddToFavouriteUseCase
+import com.vladusecho.xnews.domain.usecases.LoadArticlesUseCase
+import com.vladusecho.xnews.presentation.state.MainState
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -19,7 +22,8 @@ import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
 class MainViewModel @Inject constructor(
-    private val repository: ArticlesRepository
+    private val loadArticlesUseCase: LoadArticlesUseCase,
+    private val addToFavouriteUseCase: AddToFavouriteUseCase
 ) : ViewModel() {
 
 
@@ -31,7 +35,7 @@ class MainViewModel @Inject constructor(
         _state.value = MainState.Error(throwable.message.toString())
     }
 
-    private val searchQueryChannel = Channel<String>(Channel.CONFLATED)
+    private val searchQueryChannel = Channel<String>(Channel.Factory.CONFLATED)
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery
@@ -78,7 +82,7 @@ class MainViewModel @Inject constructor(
         _state.value = MainState.Loading
         viewModelScope.launch(exceptionHandler) {
             _state.value = MainState.Content(
-                repository.loadArticles(query)
+                loadArticlesUseCase(query)
             )
         }
     }
@@ -92,17 +96,7 @@ class MainViewModel @Inject constructor(
 
     fun addToFavourite(article: Article) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.addToFavourite(article)
+            addToFavouriteUseCase(article)
         }
-    }
-
-    fun deleteFromFavourite(articleId: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.deleteFromFavourite(articleId)
-        }
-    }
-
-    fun getFavouriteArticles(): Flow<List<Article>> {
-        return repository.favouriteArticles
     }
 }

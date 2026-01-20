@@ -1,16 +1,16 @@
 package com.vladusecho.xnews.di
 
 import android.content.Context
-import com.vladusecho.xnews.presentation.MainActivity
-import com.vladusecho.xnews.presentation.MainViewModel
-import com.vladusecho.xnews.presentation.MainViewModelFactory
+import com.vladusecho.xnews.presentation.activity.MainActivity
+import com.vladusecho.xnews.presentation.viewModel.ViewModelFactory
 import dagger.BindsInstance
 import dagger.Component
 
 @ApplicationScope
 @Component(
     modules = [
-        DataModule::class
+        DataModule::class,
+        ViewModelModule::class
     ]
 )
 interface ApplicationComponent {
@@ -25,5 +25,5 @@ interface ApplicationComponent {
 
     fun inject(activity: MainActivity)
 
-    fun mainViewModelFactory(): MainViewModelFactory
+    fun mainViewModelFactory(): ViewModelFactory
 }

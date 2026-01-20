@@ -1,4 +1,4 @@
-package com.vladusecho.xnews.presentation
+package com.vladusecho.xnews.presentation.state
 
 import com.vladusecho.xnews.domain.models.Article
 

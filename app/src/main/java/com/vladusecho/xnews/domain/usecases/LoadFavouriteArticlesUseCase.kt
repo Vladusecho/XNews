@@ -6,5 +6,5 @@ import javax.inject.Inject
 class LoadFavouriteArticlesUseCase @Inject constructor
     (private val repository: ArticlesRepository) {
 
-    operator fun invoke() = repository.favouriteArticles
+    suspend operator fun invoke() = repository.getFavouriteArticles()
 }

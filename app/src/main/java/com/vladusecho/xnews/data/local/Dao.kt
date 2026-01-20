@@ -17,5 +17,8 @@ interface Dao {
     suspend fun deleteFromFavourite(id: Int)
 
     @Query("SELECT * FROM favourite_articles")
-    fun getFavouriteArticles(): Flow<List<ArticleModel>>
+    fun getFavouriteArticles(): List<ArticleModel>
+
+    @Query("SELECT * FROM favourite_articles")
+    fun getFavouriteArticlesFlow(): Flow<List<ArticleModel>>
 }
