@@ -3,7 +3,6 @@ package com.vladusecho.xnews.presentation.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vladusecho.xnews.domain.models.Article
-import com.vladusecho.xnews.domain.repository.ArticlesRepository
 import com.vladusecho.xnews.domain.usecases.AddToFavouriteUseCase
 import com.vladusecho.xnews.domain.usecases.LoadArticlesUseCase
 import com.vladusecho.xnews.presentation.state.MainState
@@ -11,7 +10,6 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
@@ -64,7 +62,9 @@ class MainViewModel @Inject constructor(
     }
 
     init {
+        _state.value = MainState.Loading
         viewModelScope.launch {
+            _state.value = MainState.MainNews(loadArticlesUseCase(INIT_QUERY))
             searchQueryChannel.receiveAsFlow()
                 .debounce(600)
                 .distinctUntilChanged()
@@ -72,7 +72,8 @@ class MainViewModel @Inject constructor(
                     if (query.isNotBlank()) {
                         performSearch(query)
                     } else {
-                        _state.value = MainState.Initial
+                        _state.value = MainState.Loading
+                        _state.value = MainState.MainNews(loadArticlesUseCase(INIT_QUERY))
                     }
                 }
         }
@@ -98,5 +99,10 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             addToFavouriteUseCase(article)
         }
+    }
+
+    private companion object {
+
+        private const val INIT_QUERY = "Россия"
     }
 }

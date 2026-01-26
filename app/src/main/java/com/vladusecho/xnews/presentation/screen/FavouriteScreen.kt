@@ -1,5 +1,6 @@
 package com.vladusecho.xnews.presentation.screen
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
@@ -45,7 +47,7 @@ fun FavouriteScreen(
     val favArticlesFlow = favArticlesState.value.collectAsState(listOf())
     val articles = favArticlesFlow.value
 
-    viewModel.getFavouriteArticles()
+    viewModel.getFavouriteArticles().also { Log.d("FavouriteScreen", "work") }
 
     Box(
         modifier = Modifier
@@ -65,7 +67,7 @@ fun FavouriteScreen(
                                 .padding(top = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            Text("Загрузка...")
                         }
                     }
                 }

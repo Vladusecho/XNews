@@ -21,7 +21,7 @@ class FavouriteViewModel @Inject constructor(
     private val loadFavouriteArticlesFlowUseCase: LoadFavouriteArticlesFlowUseCase
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow<FavouriteState>(FavouriteState.Loading)
+    private val _state = MutableStateFlow<FavouriteState>(FavouriteState.Initial)
     val state
         get() = _state
 

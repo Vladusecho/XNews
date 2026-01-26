@@ -47,6 +47,7 @@ android {
 dependencies {
 
     implementation(libs.dagger.core)
+    implementation(libs.androidx.compose.ui.text)
     ksp(libs.dagger.compiler)
     implementation(libs.room.core)
     ksp(libs.room.compiler)

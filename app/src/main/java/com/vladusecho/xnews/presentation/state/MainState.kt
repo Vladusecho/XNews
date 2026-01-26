@@ -6,6 +6,8 @@ sealed class MainState {
 
     object Initial : MainState()
 
+    data class MainNews(val initArticles: List<Article>) : MainState()
+
     object Loading : MainState()
 
     data class Error(val error: String) : MainState()
