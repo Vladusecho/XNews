@@ -26,7 +26,7 @@ class ArticlesRepositoryImpl @Inject constructor(
     override suspend fun getFavouriteArticles(): List<Article> =
         dao.getFavouriteArticles().mapperArticleModelsToArticle()
 
-    override suspend fun getFavouriteArticlesFlow(): Flow<List<Article>> {
+    override fun getFavouriteArticlesFlow(): Flow<List<Article>> {
         return dao.getFavouriteArticlesFlow().map { it.mapperArticleModelsToArticle() }
     }
 

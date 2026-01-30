@@ -9,5 +9,5 @@ sealed class FavouriteState {
 
     object Loading : FavouriteState()
 
-    object Content : FavouriteState()
+    data class Content(val articles: List<Article>) : FavouriteState()
 }

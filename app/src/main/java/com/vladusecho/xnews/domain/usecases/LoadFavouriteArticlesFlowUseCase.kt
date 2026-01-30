@@ -7,5 +7,5 @@ class LoadFavouriteArticlesFlowUseCase @Inject constructor(
     private val repository: ArticlesRepository
 ) {
 
-    suspend operator fun invoke() = repository.getFavouriteArticlesFlow()
+    operator fun invoke() = repository.getFavouriteArticlesFlow()
 }

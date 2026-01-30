@@ -1,11 +1,16 @@
 package com.vladusecho.xnews.presentation.screen
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,11 +24,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -35,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -71,6 +81,8 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModelFactory: ViewModelFactory) {
+
+    val scope = rememberCoroutineScope()
 
     val viewModel: MainViewModel = viewModel(factory = viewModelFactory)
 
@@ -146,7 +158,7 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
             },
             favoriteScreenContent = {
                 FavouriteScreen(
-                    paddingValues, viewModelFactory
+                    viewModelFactory
                 )
             },
             profileScreenContent = { Text("profile") }
@@ -166,6 +178,14 @@ private fun HomeScreenContent(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    val listState = rememberLazyListState()
+
+    val showFab by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -173,7 +193,9 @@ private fun HomeScreenContent(
             .padding(paddingValues)
             .border(BorderStroke(0.5.dp, MaterialTheme.colorScheme.onSecondary))
     ) {
-        LazyColumn {
+        LazyColumn(
+            state = listState
+        ) {
             item {
                 AppNameWithSearchBar(viewModel)
             }
@@ -254,6 +276,42 @@ private fun HomeScreenContent(
                 .align(Alignment.BottomCenter),
             snackbarHostState
         )
+        Box(
+            modifier = Modifier.fillMaxSize().padding(10.dp),
+            contentAlignment = Alignment.BottomEnd
+        ){
+            AnimatedFAB(
+                showFab, listState
+            )
+        }
+    }
+}
+
+@Composable
+fun AnimatedFAB(
+    showFab: Boolean,
+    listState: LazyListState
+) {
+    val scope = rememberCoroutineScope()
+
+    AnimatedVisibility(
+        visible = showFab,
+        enter = fadeIn() + scaleIn(),
+        exit = fadeOut() + scaleOut()
+    ) {
+        FloatingActionButton(
+            onClick = {
+                scope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.onSecondary,
+            contentColor = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier
+                .padding(bottom = 16.dp)
+        ) {
+            Icon(Icons.Default.ArrowUpward, null)
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 package com.vladusecho.xnews.presentation.viewModel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vladusecho.xnews.domain.models.Article
@@ -11,7 +12,9 @@ import com.vladusecho.xnews.presentation.state.FavouriteState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,9 +28,19 @@ class FavouriteViewModel @Inject constructor(
     val state
         get() = _state
 
-    private val _articles = MutableStateFlow<Flow<List<Article>>>(flowOf())
-    val favouriteArticles
-        get() = _articles
+    val articles: Flow<List<Article>> = loadFavouriteArticlesFlowUseCase()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    init {
+        _state.value = FavouriteState.Loading
+        viewModelScope.launch(Dispatchers.IO) {
+            _state.value = FavouriteState.Content(loadFavouriteArticlesUseCase())
+        }
+    }
 
     fun deleteFromFavourite(articleId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -35,11 +48,11 @@ class FavouriteViewModel @Inject constructor(
         }
     }
 
-    fun getFavouriteArticles() {
-        _state.value = FavouriteState.Loading
-        viewModelScope.launch(Dispatchers.IO) {
-            _state.value = FavouriteState.Content
-            _articles.value = loadFavouriteArticlesFlowUseCase()
-        }
-    }
+//    fun getFavouriteArticles() {
+//        _state.value = FavouriteState.Loading
+//        viewModelScope.launch(Dispatchers.IO) {
+//            _state.value = FavouriteState.Content
+//            _articles.value = loadFavouriteArticlesFlowUseCase()
+//        }
+//    }
 }
