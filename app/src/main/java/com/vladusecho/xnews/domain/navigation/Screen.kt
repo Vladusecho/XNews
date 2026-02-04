@@ -8,12 +8,9 @@ sealed class Screen(
 
     object Favorite: Screen(ROUTE_FAVORITE)
 
-    object Profile: Screen(ROUTE_PROFILE)
-
 
     companion object {
         const val ROUTE_HOME = "home"
         const val ROUTE_FAVORITE = "favorite"
-        const val ROUTE_PROFILE = "profile"
     }
 }

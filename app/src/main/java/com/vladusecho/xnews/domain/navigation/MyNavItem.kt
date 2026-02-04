@@ -24,10 +24,4 @@ sealed class MyNavigationItem(
         icon = Icons.Outlined.Favorite,
         title = "Избранное"
     )
-
-    object Profile : MyNavigationItem(
-        screen = Screen.Profile,
-        icon = Icons.Outlined.AccountCircle,
-        title = "Профиль"
-    )
 }

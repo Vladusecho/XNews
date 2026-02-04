@@ -1,105 +1,77 @@
 package com.vladusecho.xnews.presentation.screen
 
-import android.content.Intent
+import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.currentBackStackEntryAsState
-import coil3.compose.AsyncImage
-import com.vladusecho.xnews.R
-import com.vladusecho.xnews.domain.models.Article
 import com.vladusecho.xnews.domain.navigation.AppNavGraph
 import com.vladusecho.xnews.domain.navigation.MyNavigationItem
 import com.vladusecho.xnews.domain.navigation.Screen
 import com.vladusecho.xnews.domain.navigation.rememberNavState
-import com.vladusecho.xnews.presentation.ImgState
-import com.vladusecho.xnews.presentation.MainState
-import com.vladusecho.xnews.presentation.MainViewModel
-import com.vladusecho.xnews.ui.theme.XNewsTheme
+import com.vladusecho.xnews.presentation.customSnackbar.MySnackbarHost
+import com.vladusecho.xnews.presentation.mySwiper.MySwiper
+import com.vladusecho.xnews.presentation.mySwiper.SwipeActionType
+import com.vladusecho.xnews.presentation.state.MainState
+import com.vladusecho.xnews.presentation.viewModel.MainViewModel
+import com.vladusecho.xnews.presentation.viewModel.ViewModelFactory
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(viewModelFactory: ViewModelFactory) {
+
+    val viewModel: MainViewModel = viewModel(factory = viewModelFactory)
 
     val navState = rememberNavState()
 
     Scaffold(
-        topBar = {
-            val currentRoute =
-                navState.navHostController.currentBackStackEntryAsState().value?.destination?.route
-            val title = when (currentRoute) {
-                Screen.ROUTE_HOME -> "XNews"
-                Screen.ROUTE_PROFILE -> "Профиль"
-                Screen.ROUTE_FAVORITE -> "Избранное"
-                else -> "Error"
-            }
-            TopAppBar(
-                title = {
-                    Text(title)
-                },
-                colors = TopAppBarDefaults.topAppBarColors()
-                    .copy(containerColor = MaterialTheme.colorScheme.background)
-            )
-        },
         bottomBar = {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.background
@@ -107,9 +79,14 @@ fun MainScreen() {
                 val navBackStackEntry by navState.navHostController.currentBackStackEntryAsState()
                 val items = listOf(
                     MyNavigationItem.Home,
-                    MyNavigationItem.Favorite,
-                    MyNavigationItem.Profile
+                    MyNavigationItem.Favorite
                 )
+
+                val unseenNewsState = viewModel.unseenNews.collectAsState()
+                val unseenNews = unseenNewsState.value
+                val isWatchedFavouriteState = viewModel.isWatchedFavourite.collectAsState()
+                val isWatchedFavourite = isWatchedFavouriteState.value
+
                 items.forEach { item ->
                     val selected = navBackStackEntry?.destination?.hierarchy?.any {
                         it.route == item.screen.route
@@ -121,13 +98,34 @@ fun MainScreen() {
                             if (!selected) {
                                 navState.navigateTo(item.screen.route)
                             }
+                            if (item.screen.route == Screen.ROUTE_FAVORITE) {
+                                viewModel.invisibleCounter()
+                            }
+                            if (item.screen.route == Screen.ROUTE_HOME) {
+                                viewModel.visibleCounter()
+                            }
                         },
                         icon = {
-                            Icon(item.icon, null)
+                            BadgedBox(
+                                badge = {
+                                    if (!isWatchedFavourite) {
+                                        if (unseenNews > 0 && item.screen.route == Screen.ROUTE_FAVORITE) {
+                                            Badge {
+                                                Text("$unseenNews")
+                                            }
+                                        }
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = item.icon,
+                                    null
+                                )
+                            }
                         },
                         label = {
                             Text(item.title)
-                        }
+                        },
                     )
                 }
             }
@@ -137,63 +135,38 @@ fun MainScreen() {
             navState.navHostController,
             homeScreenContent = {
                 HomeScreenContent(
-                    paddingValues
+                    paddingValues, viewModel
                 )
             },
             favoriteScreenContent = {
-                FavouriteScreen()
-            },
-            profileScreenContent = { Text("profile") }
+                FavouriteScreen(
+                    viewModelFactory
+                )
+            }
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScreenContent(
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    viewModel: MainViewModel
 ) {
-    LazyColumnWithSearchBar(paddingValues)
-}
-
-@Composable
-private fun ShowSnackbar(
-    textError: String
-) {
-    val snackbarHostState = remember { SnackbarHostState() }
-    var showSnackbar by remember { mutableStateOf(true) }
-    Box(
-        modifier = Modifier
-            .fillMaxSize(),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(7.dp)
-        ) {
-            Snackbar(
-                it,
-                containerColor = MaterialTheme.colorScheme.background,
-                contentColor = MaterialTheme.colorScheme.onBackground
-            )
-        }
-        LaunchedEffect(showSnackbar) {
-            if (showSnackbar) {
-                snackbarHostState.showSnackbar(textError)
-                showSnackbar = false
-            }
-        }
-    }
-}
-
-@Composable
-private fun LazyColumnWithSearchBar(
-    paddingValues: PaddingValues
-) {
-    val viewModel: MainViewModel = viewModel()
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
+
+    val isDuplicateState = viewModel.isDuplicate.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    val listState = rememberLazyListState()
+
+    val showFab by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -202,24 +175,90 @@ private fun LazyColumnWithSearchBar(
             .padding(paddingValues)
             .border(BorderStroke(0.5.dp, MaterialTheme.colorScheme.onSecondary))
     ) {
-        LazyColumn {
+        LazyColumn(
+            state = listState
+        ) {
             item {
-                MySearchBar()
+                AppNameWithSearchBar(viewModel)
             }
             when (currentState) {
                 is MainState.Content -> {
                     items(items = currentState.articles) {
-                        Article(it)
+                        Box(
+                            modifier = Modifier.animateItem()
+                        ) {
+                            MySwiper(
+                                article = it,
+                                swipeActionType = SwipeActionType.ADD_TO_FAVOURITE
+                            ) {
+                                scope.launch {
+                                    val result = viewModel.addToFavourite(it).await()
+                                    when (result) {
+                                        MainViewModel.Duplicate.False -> {
+                                            viewModel.incrementNewFavouriteCount()
+                                            snackbarHostState.showSnackbar("✅ Успешно добавлено!")
+
+                                        }
+
+                                        MainViewModel.Duplicate.True -> {
+                                            snackbarHostState.showSnackbar("✅ Статья уже была добавлена!")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Log.d("HomeScreenContent", it.id.toString())
                     }
                 }
 
-                is MainState.Error ->
-                    item {
-                        ShowSnackbar(currentState.error)
+                is MainState.Error -> {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("❌ Что-то пошло не так...")
                     }
+                }
 
-                MainState.Initial -> {
+                is MainState.MainNews -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.background)
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Главные новости за последнее время",
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                        }
+                    }
+                    items(items = currentState.initArticles) {
+                        Box(
+                            modifier = Modifier.animateItem()
+                        ) {
+                            MySwiper(
+                                article = it,
+                                swipeActionType = SwipeActionType.ADD_TO_FAVOURITE
+                            ) {
+                                scope.launch {
+                                    val result = viewModel.addToFavourite(it).await()
+                                    when (result) {
+                                        MainViewModel.Duplicate.False -> {
+                                            viewModel.incrementNewFavouriteCount()
+                                            snackbarHostState.showSnackbar("✅ Успешно добавлено!")
 
+                                        }
+
+                                        MainViewModel.Duplicate.True -> {
+                                            snackbarHostState.showSnackbar("✅ Статья уже была добавлена!")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 MainState.Loading -> {
@@ -230,31 +269,86 @@ private fun LazyColumnWithSearchBar(
                                 .padding(top = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            Text("Загрузка...")
                         }
                     }
                 }
+
+                MainState.Initial -> {}
             }
+        }
+        MySnackbarHost(
+            modifier = Modifier
+                .padding(10.dp)
+                .align(Alignment.BottomCenter),
+            snackbarHostState
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            AnimatedFAB(
+                showFab, listState
+            )
         }
     }
 }
 
 @Composable
-private fun MySearchBar() {
+fun AnimatedFAB(
+    showFab: Boolean,
+    listState: LazyListState
+) {
+    val scope = rememberCoroutineScope()
 
-    val viewModel: MainViewModel = viewModel()
+    AnimatedVisibility(
+        visible = showFab,
+        enter = fadeIn() + scaleIn(),
+        exit = fadeOut() + scaleOut()
+    ) {
+        FloatingActionButton(
+            onClick = {
+                scope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.onSecondary,
+            contentColor = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier
+                .padding(bottom = 16.dp)
+        ) {
+            Icon(Icons.Default.ArrowUpward, null)
+        }
+    }
+}
 
-    val searchQuery = viewModel.searchQuery.collectAsState()
+@Composable
+fun AppNameWithSearchBar(
+    viewModel: MainViewModel
+) {
 
-    Row(
+    val searchQueryState = viewModel.searchQuery.collectAsState()
+    val searchQuery = searchQueryState.value
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.Center
+            .padding(vertical = 10.dp, horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Text(
+            "XNews",
+            style = MaterialTheme.typography.headlineLarge
+        )
+        Text(
+            "Developed by Vladusecho <3",
+            style = MaterialTheme.typography.labelSmall
+        )
+        Spacer(modifier = Modifier.height(10.dp))
         TextField(
-            value = searchQuery.value,
+            value = searchQuery,
             onValueChange = { query ->
                 viewModel.onSearchQueryChanged(query)
             },
@@ -262,148 +356,77 @@ private fun MySearchBar() {
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedContainerColor = MaterialTheme.colorScheme.background,
                 unfocusedBorderColor = Color.Transparent,
-                focusedContainerColor = MaterialTheme.colorScheme.background
+                focusedContainerColor = MaterialTheme.colorScheme.background,
             ),
             singleLine = true
         )
-        Spacer(Modifier.width(7.dp))
-        Icon(
-            modifier = Modifier
-                .size(56.5.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .clickable {
-                    viewModel.performSearch(searchQuery.value)
-                }
-                .background(MaterialTheme.colorScheme.background),
-            contentDescription = null,
-            painter = painterResource(R.drawable.ic_search),
-            tint = Color.Unspecified
-        )
     }
 }
 
-@Composable
-private fun Article(
-    article: Article
-) {
-
-    var isLoading : ImgState by remember { mutableStateOf(ImgState.Initial) }
-    val context = LocalContext.current
-
-    Box(
-        modifier = Modifier
-            .padding(16.dp)
-            .shadow(
-                elevation = 8.dp,
-                shape = MaterialTheme.shapes.medium,
-                clip = true
-            )
-            .clip(CircleShape.copy(CornerSize(13.dp)))
-            .background(MaterialTheme.colorScheme.background)
-            .clickable {
-                val intent = Intent(Intent.ACTION_VIEW, article.url.toUri())
-                context.startActivity(intent)
-            }
-    ) {
-        Column {
-
-            when(isLoading){
-                ImgState.Initial -> {}
-                ImgState.LoadedImg -> {}
-                ImgState.LoadingImg -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize().height(140.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-                ImgState.Error -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize().height(140.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Error,
-                            contentDescription = ""
-                        )
-                    }
-                }
-            }
-
-            AsyncImage(
-                modifier = Modifier
-                    .fillMaxSize(),
-                model = article.urlToImage ?: "",
-                contentDescription = null,
-                contentScale = ContentScale.FillWidth,
-                onLoading = {
-                    isLoading = ImgState.LoadingImg
-                },
-                onSuccess = {
-                    isLoading = ImgState.LoadedImg
-                },
-                onError = {
-                    isLoading = ImgState.Error
-                }
-            )
-
-//            Image(
-//                painter = painterResource(R.drawable.img_post_example),
-//                contentDescription = null
-//            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 15.dp)
-            ) {
-                Text(
-                    text = article.getDateWithAuthor(),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.ExtraLight
-                )
-                Spacer(modifier = Modifier.height(5.dp))
-                Text(
-                    text = article.title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(5.dp))
-                Text(
-                    text = article.description,
-                    fontWeight = FontWeight.Light
-                )
-                Spacer(modifier = Modifier.height(15.dp))
-            }
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun MainScreenPreview() {
-    XNewsTheme(darkTheme = false) {
-        MainScreen()
-    }
-}
-
-//@Preview
 //@Composable
-//private fun ArticlePreview() {
-//    Box(
-//        modifier = Modifier.fillMaxSize()
-//            .background(Color.White),
-//    ) {
+//fun BreakingNewsTicker(
+//    modifier: Modifier = Modifier
+//) {
+//    val text = "Главные новости за последнее время"
+//    var textWidth by remember { mutableFloatStateOf(0f) }
+//    var containerWidth by remember { mutableFloatStateOf(0f) }
 //
+//    // Длительность анимации (быстрее = меньше число)
+//    val duration = 7000
+//
+//    val infiniteTransition = rememberInfiniteTransition()
+//    val offsetX by infiniteTransition.animateFloat(
+//        initialValue = containerWidth, // Начинаем справа
+//        targetValue = -textWidth, // Заканчиваем слева
+//        animationSpec = infiniteRepeatable(
+//            animation = tween(duration, easing = LinearEasing),
+//            repeatMode = RepeatMode.Restart
+//        )
+//    )
+//
+//    Box(
+//        modifier = modifier
+//            .fillMaxWidth()
+//            .clipToBounds()
+//            .onSizeChanged { containerWidth = it.width.toFloat() }
+//    ) {
+//        // Измеряем ширину текста
+//        Text(
+//            text = text,
+//            color = MaterialTheme.colorScheme.onBackground,
+//            fontWeight = FontWeight.Bold,
+//            fontSize = 18.sp,
+//            modifier = Modifier
+//                .alpha(0f)
+//                .onGloballyPositioned {
+//                    textWidth = it.size.width.toFloat()
+//                }
+//        )
+//
+//        // Анимированный текст
+//        Text(
+//            text = text,
+//            color = MaterialTheme.colorScheme.onBackground,
+//            fontWeight = FontWeight.Bold,
+//            fontSize = 18.sp,
+//            modifier = Modifier
+//                .offset { IntOffset(offsetX.roundToInt(), 0) }
+//                .graphicsLayer {
+//                },
+//            maxLines = 1
+//        )
+//
+//        // Второй экземпляр для непрерывности
+//        Text(
+//            text = text,
+//            color = MaterialTheme.colorScheme.onBackground,
+//            fontWeight = FontWeight.Bold,
+//            fontSize = 18.sp,
+//            modifier = Modifier
+//                .offset { IntOffset((offsetX + textWidth + containerWidth).roundToInt(), 0) }
+//                .graphicsLayer {
+//                },
+//            maxLines = 1
+//        )
 //    }
-//    Article(ArticleDto(
-//        1,
-//        "vlad",
-//        "Inside a Wild Bitcoin Heist: Five-Star Hotels, Cash-Stuffed Envelopes, and Vanishing Funds",
-//        "Sophisticated crypto scams are on the rise. But few of them go to the lengths one bitcoin mining executive experienced earlier this year.",
-//        "https://www.wired.com/story/bitcoin-scam-mining-as-service/",
-//        "https://gizmodo.com/app/uploads/2024/04/0ddbd47a359dbefbb14c16d0ffe99a95.jpg",
-//        "2025-11-17T10:00:00Z",
-//        ""
-//    ))
 //}
