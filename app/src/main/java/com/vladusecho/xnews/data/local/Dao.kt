@@ -21,4 +21,7 @@ interface Dao {
 
     @Query("SELECT * FROM favourite_articles")
     fun getFavouriteArticlesFlow(): Flow<List<ArticleModel>>
+
+    @Query("SELECT url FROM favourite_articles")
+    suspend fun checkDuplicates(): List<String>
 }

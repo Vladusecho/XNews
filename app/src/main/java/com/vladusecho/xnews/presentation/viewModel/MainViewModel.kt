@@ -1,14 +1,18 @@
 package com.vladusecho.xnews.presentation.viewModel
 
+import android.text.BoringLayout
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vladusecho.xnews.domain.models.Article
 import com.vladusecho.xnews.domain.usecases.AddToFavouriteUseCase
+import com.vladusecho.xnews.domain.usecases.CheckDuplicatesUseCase
 import com.vladusecho.xnews.domain.usecases.LoadArticlesUseCase
 import com.vladusecho.xnews.presentation.state.MainState
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +25,8 @@ import javax.inject.Inject
 @OptIn(FlowPreview::class)
 class MainViewModel @Inject constructor(
     private val loadArticlesUseCase: LoadArticlesUseCase,
-    private val addToFavouriteUseCase: AddToFavouriteUseCase
+    private val addToFavouriteUseCase: AddToFavouriteUseCase,
+    private val checkDuplicatesUseCase: CheckDuplicatesUseCase
 ) : ViewModel() {
 
 
@@ -46,7 +51,11 @@ class MainViewModel @Inject constructor(
 
     private val _isWatchedFavourite = MutableStateFlow(false)
     val isWatchedFavourite
-        get() = _isWatchedFavourite
+        get() = _isWatchedFavourite.asStateFlow()
+
+    private val _isDuplicate = MutableStateFlow(false)
+    val isDuplicate
+        get() = _isDuplicate.asStateFlow()
 
     fun incrementNewFavouriteCount() {
         _unseenNews.value = _unseenNews.value + 1
@@ -95,14 +104,25 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun addToFavourite(article: Article) {
-        viewModelScope.launch(Dispatchers.IO) {
-            addToFavouriteUseCase(article)
+    fun addToFavourite(article: Article): Deferred<Duplicate> = viewModelScope.async(Dispatchers.IO) {
+            val urls = checkDuplicatesUseCase()
+            if (article.url !in urls) {
+                addToFavouriteUseCase(article)
+                return@async Duplicate.False
+            } else {
+                return@async Duplicate.True
+            }
         }
-    }
 
     private companion object {
 
         private const val INIT_QUERY = "Россия"
+    }
+
+    sealed class Duplicate {
+
+        object True : Duplicate()
+
+        object False : Duplicate()
     }
 }

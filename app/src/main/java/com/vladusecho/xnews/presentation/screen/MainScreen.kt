@@ -1,12 +1,7 @@
 package com.vladusecho.xnews.presentation.screen
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -21,7 +16,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -46,20 +40,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -76,13 +62,10 @@ import com.vladusecho.xnews.presentation.state.MainState
 import com.vladusecho.xnews.presentation.viewModel.MainViewModel
 import com.vladusecho.xnews.presentation.viewModel.ViewModelFactory
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModelFactory: ViewModelFactory) {
-
-    val scope = rememberCoroutineScope()
 
     val viewModel: MainViewModel = viewModel(factory = viewModelFactory)
 
@@ -96,8 +79,7 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
                 val navBackStackEntry by navState.navHostController.currentBackStackEntryAsState()
                 val items = listOf(
                     MyNavigationItem.Home,
-                    MyNavigationItem.Favorite,
-                    MyNavigationItem.Profile
+                    MyNavigationItem.Favorite
                 )
 
                 val unseenNewsState = viewModel.unseenNews.collectAsState()
@@ -160,8 +142,7 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
                 FavouriteScreen(
                     viewModelFactory
                 )
-            },
-            profileScreenContent = { Text("profile") }
+            }
         )
     }
 }
@@ -175,6 +156,7 @@ private fun HomeScreenContent(
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
 
+    val isDuplicateState = viewModel.isDuplicate.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -209,13 +191,23 @@ private fun HomeScreenContent(
                                 article = it,
                                 swipeActionType = SwipeActionType.ADD_TO_FAVOURITE
                             ) {
-                                viewModel.addToFavourite(it)
-                                viewModel.incrementNewFavouriteCount()
                                 scope.launch {
-                                    snackbarHostState.showSnackbar("✅ Успешно добавлено!")
+                                    val result = viewModel.addToFavourite(it).await()
+                                    when (result) {
+                                        MainViewModel.Duplicate.False -> {
+                                            viewModel.incrementNewFavouriteCount()
+                                            snackbarHostState.showSnackbar("✅ Успешно добавлено!")
+
+                                        }
+
+                                        MainViewModel.Duplicate.True -> {
+                                            snackbarHostState.showSnackbar("✅ Статья уже была добавлена!")
+                                        }
+                                    }
                                 }
                             }
                         }
+                        Log.d("HomeScreenContent", it.id.toString())
                     }
                 }
 
@@ -231,9 +223,15 @@ private fun HomeScreenContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(MaterialTheme.colorScheme.background)
-                                .padding(vertical = 10.dp)
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            BreakingNewsTicker()
+                            Text(
+                                "Главные новости за последнее время",
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
                         }
                     }
                     items(items = currentState.initArticles) {
@@ -244,10 +242,19 @@ private fun HomeScreenContent(
                                 article = it,
                                 swipeActionType = SwipeActionType.ADD_TO_FAVOURITE
                             ) {
-                                viewModel.addToFavourite(it)
-                                viewModel.incrementNewFavouriteCount()
                                 scope.launch {
-                                    snackbarHostState.showSnackbar("✅ Успешно добавлено!")
+                                    val result = viewModel.addToFavourite(it).await()
+                                    when (result) {
+                                        MainViewModel.Duplicate.False -> {
+                                            viewModel.incrementNewFavouriteCount()
+                                            snackbarHostState.showSnackbar("✅ Успешно добавлено!")
+
+                                        }
+
+                                        MainViewModel.Duplicate.True -> {
+                                            snackbarHostState.showSnackbar("✅ Статья уже была добавлена!")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -277,9 +284,11 @@ private fun HomeScreenContent(
             snackbarHostState
         )
         Box(
-            modifier = Modifier.fillMaxSize().padding(10.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp),
             contentAlignment = Alignment.BottomEnd
-        ){
+        ) {
             AnimatedFAB(
                 showFab, listState
             )
@@ -354,70 +363,70 @@ fun AppNameWithSearchBar(
     }
 }
 
-@Composable
-fun BreakingNewsTicker(
-    modifier: Modifier = Modifier
-) {
-    val text = "Главные новости за последнее время"
-    var textWidth by remember { mutableFloatStateOf(0f) }
-    var containerWidth by remember { mutableFloatStateOf(0f) }
-
-    // Длительность анимации (быстрее = меньше число)
-    val duration = 7000
-
-    val infiniteTransition = rememberInfiniteTransition()
-    val offsetX by infiniteTransition.animateFloat(
-        initialValue = containerWidth, // Начинаем справа
-        targetValue = -textWidth, // Заканчиваем слева
-        animationSpec = infiniteRepeatable(
-            animation = tween(duration, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        )
-    )
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clipToBounds()
-            .onSizeChanged { containerWidth = it.width.toFloat() }
-    ) {
-        // Измеряем ширину текста
-        Text(
-            text = text,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
-            modifier = Modifier
-                .alpha(0f)
-                .onGloballyPositioned {
-                    textWidth = it.size.width.toFloat()
-                }
-        )
-
-        // Анимированный текст
-        Text(
-            text = text,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
-            modifier = Modifier
-                .offset { IntOffset(offsetX.roundToInt(), 0) }
-                .graphicsLayer {
-                },
-            maxLines = 1
-        )
-
-        // Второй экземпляр для непрерывности
-        Text(
-            text = text,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
-            modifier = Modifier
-                .offset { IntOffset((offsetX + textWidth + containerWidth).roundToInt(), 0) }
-                .graphicsLayer {
-                },
-            maxLines = 1
-        )
-    }
-}
+//@Composable
+//fun BreakingNewsTicker(
+//    modifier: Modifier = Modifier
+//) {
+//    val text = "Главные новости за последнее время"
+//    var textWidth by remember { mutableFloatStateOf(0f) }
+//    var containerWidth by remember { mutableFloatStateOf(0f) }
+//
+//    // Длительность анимации (быстрее = меньше число)
+//    val duration = 7000
+//
+//    val infiniteTransition = rememberInfiniteTransition()
+//    val offsetX by infiniteTransition.animateFloat(
+//        initialValue = containerWidth, // Начинаем справа
+//        targetValue = -textWidth, // Заканчиваем слева
+//        animationSpec = infiniteRepeatable(
+//            animation = tween(duration, easing = LinearEasing),
+//            repeatMode = RepeatMode.Restart
+//        )
+//    )
+//
+//    Box(
+//        modifier = modifier
+//            .fillMaxWidth()
+//            .clipToBounds()
+//            .onSizeChanged { containerWidth = it.width.toFloat() }
+//    ) {
+//        // Измеряем ширину текста
+//        Text(
+//            text = text,
+//            color = MaterialTheme.colorScheme.onBackground,
+//            fontWeight = FontWeight.Bold,
+//            fontSize = 18.sp,
+//            modifier = Modifier
+//                .alpha(0f)
+//                .onGloballyPositioned {
+//                    textWidth = it.size.width.toFloat()
+//                }
+//        )
+//
+//        // Анимированный текст
+//        Text(
+//            text = text,
+//            color = MaterialTheme.colorScheme.onBackground,
+//            fontWeight = FontWeight.Bold,
+//            fontSize = 18.sp,
+//            modifier = Modifier
+//                .offset { IntOffset(offsetX.roundToInt(), 0) }
+//                .graphicsLayer {
+//                },
+//            maxLines = 1
+//        )
+//
+//        // Второй экземпляр для непрерывности
+//        Text(
+//            text = text,
+//            color = MaterialTheme.colorScheme.onBackground,
+//            fontWeight = FontWeight.Bold,
+//            fontSize = 18.sp,
+//            modifier = Modifier
+//                .offset { IntOffset((offsetX + textWidth + containerWidth).roundToInt(), 0) }
+//                .graphicsLayer {
+//                },
+//            maxLines = 1
+//        )
+//    }
+//}

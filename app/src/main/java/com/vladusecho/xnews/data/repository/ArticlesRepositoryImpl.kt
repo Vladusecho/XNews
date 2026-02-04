@@ -37,4 +37,8 @@ class ArticlesRepositoryImpl @Inject constructor(
     override suspend fun deleteFromFavourite(articleId: Int) {
         dao.deleteFromFavourite(articleId)
     }
+
+    override suspend fun checkDuplicates(): List<String> {
+        return dao.checkDuplicates()
+    }
 }

@@ -13,4 +13,6 @@ interface ArticlesRepository {
     suspend fun addToFavourite(article: Article)
 
     suspend fun deleteFromFavourite(articleId: Int)
+
+    suspend fun checkDuplicates(): List<String>
 }
