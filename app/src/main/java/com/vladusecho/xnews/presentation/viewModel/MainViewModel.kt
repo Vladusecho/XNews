@@ -1,6 +1,7 @@
 package com.vladusecho.xnews.presentation.viewModel
 
 import android.text.BoringLayout
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vladusecho.xnews.domain.models.Article
@@ -71,9 +72,11 @@ class MainViewModel @Inject constructor(
     }
 
     init {
-        _state.value = MainState.Loading
-        viewModelScope.launch {
-            _state.value = MainState.MainNews(loadArticlesUseCase(INIT_QUERY))
+        showMainNews()
+    }
+
+    fun showMainNews() {
+        viewModelScope.launch(exceptionHandler) {
             searchQueryChannel.receiveAsFlow()
                 .debounce(600)
                 .distinctUntilChanged()
@@ -85,6 +88,14 @@ class MainViewModel @Inject constructor(
                         _state.value = MainState.MainNews(loadArticlesUseCase(INIT_QUERY))
                     }
                 }
+        }
+        if (_searchQuery.value.isNotEmpty()) {
+            performSearch(_searchQuery.value)
+        } else {
+            _state.value = MainState.Loading
+            viewModelScope.launch(exceptionHandler) {
+                _state.value = MainState.MainNews(loadArticlesUseCase(INIT_QUERY))
+            }
         }
     }
 
@@ -99,12 +110,13 @@ class MainViewModel @Inject constructor(
 
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             searchQueryChannel.send(query)
         }
     }
 
-    fun addToFavourite(article: Article): Deferred<Duplicate> = viewModelScope.async(Dispatchers.IO) {
+    fun addToFavourite(article: Article): Deferred<Duplicate> =
+        viewModelScope.async(Dispatchers.IO) {
             val urls = checkDuplicatesUseCase()
             if (article.url !in urls) {
                 addToFavouriteUseCase(article)
@@ -113,6 +125,10 @@ class MainViewModel @Inject constructor(
                 return@async Duplicate.True
             }
         }
+
+    fun updateAfterError() {
+        showMainNews()
+    }
 
     private companion object {
 

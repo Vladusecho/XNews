@@ -25,6 +25,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -156,7 +158,6 @@ private fun HomeScreenContent(
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
 
-    val isDuplicateState = viewModel.isDuplicate.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -212,6 +213,26 @@ private fun HomeScreenContent(
                 }
 
                 is MainState.Error -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 20.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Button(
+                                {viewModel.updateAfterError()},
+                                colors = ButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.background,
+                                    contentColor = MaterialTheme.colorScheme.onBackground,
+                                    disabledContentColor = Color.Transparent,
+                                    disabledContainerColor = Color.Transparent
+                                )
+                            ) {
+                                Text("Обновить")
+                            }
+                        }
+                    }
                     scope.launch {
                         snackbarHostState.showSnackbar("❌ Что-то пошло не так...")
                     }
@@ -223,11 +244,11 @@ private fun HomeScreenContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(MaterialTheme.colorScheme.background)
-                                .padding(vertical = 10.dp),
+                                .padding(10.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "Главные новости за последнее время",
+                                "Главные новости",
                                 color = MaterialTheme.colorScheme.onBackground,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
