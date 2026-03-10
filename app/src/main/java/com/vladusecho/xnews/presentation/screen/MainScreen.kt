@@ -33,6 +33,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -47,6 +48,7 @@ import com.vladusecho.xnews.presentation.model.HeroFontFamily
 import com.vladusecho.xnews.presentation.model.HotArticleCard
 import com.vladusecho.xnews.presentation.model.MainArticleCard
 import com.vladusecho.xnews.presentation.model.SecondaryArticleCard
+import com.vladusecho.xnews.presentation.state.ImgState
 import com.vladusecho.xnews.presentation.viewModel.MainState
 import com.vladusecho.xnews.presentation.viewModel.MainViewModel
 import kotlinx.coroutines.launch
@@ -194,7 +196,7 @@ fun HomeScreenContent(
                         }
                         businessArticles.takeLast(3).forEachIndexed { index, article ->
                             item(
-                                key = article.id.toString() + article.urlToImage
+                                key = article.id + article.urlToImage
                             ) {
                                 Box(
                                     modifier = Modifier.padding(16.dp)

@@ -8,7 +8,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 
 @Database(
     entities = [ArticleModel::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class FavouriteDatabase : RoomDatabase() {

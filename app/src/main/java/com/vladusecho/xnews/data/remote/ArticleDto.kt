@@ -3,7 +3,7 @@ package com.vladusecho.xnews.data.remote
 import com.google.gson.annotations.SerializedName
 
 data class ArticleDto(
-    @SerializedName("id") val id: Int,
+    @SerializedName("id") val id: String,
     @SerializedName("author") val author: String?,
     @SerializedName("title") val title: String,
     @SerializedName("description") val description: String,

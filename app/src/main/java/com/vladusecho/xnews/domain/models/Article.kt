@@ -1,7 +1,7 @@
 package com.vladusecho.xnews.domain.models
 
 data class Article(
-    val id: Int,
+    val id: String,
     val author: String?,
     val title: String,
     val description: String,

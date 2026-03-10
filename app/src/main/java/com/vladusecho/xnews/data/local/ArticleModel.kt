@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName
 
 @Entity("favourite_articles")
 data class ArticleModel (
-    @PrimaryKey(autoGenerate = true) val id: Int,
+    @PrimaryKey val id: String,
     val author: String?,
     val title: String,
     val description: String,

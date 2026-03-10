@@ -1,5 +1,6 @@
 package com.vladusecho.xnews.presentation.model
 
+import android.R
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -112,7 +114,9 @@ fun LoadingImageStatus(imgState: ImgState) {
                     .height(140.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(
+                    color = Color(0xffFF0606)
+                )
             }
         }
 
@@ -125,7 +129,8 @@ fun LoadingImageStatus(imgState: ImgState) {
             ) {
                 Icon(
                     Icons.Default.Error,
-                    contentDescription = "Error icon"
+                    contentDescription = "Error icon",
+                    tint = Color(0xffFF0606)
                 )
             }
         }

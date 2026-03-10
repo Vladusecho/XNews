@@ -16,6 +16,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +36,7 @@ import coil3.compose.AsyncImage
 import com.vladusecho.xnews.R
 import com.vladusecho.xnews.data.mappers.toArticleDateFormat
 import com.vladusecho.xnews.domain.models.Article
+import com.vladusecho.xnews.presentation.state.ImgState
 import com.vladusecho.xnews.ui.theme.XNewsTheme
 import java.text.SimpleDateFormat
 
@@ -40,6 +45,7 @@ fun SecondaryArticleCard(
     modifier: Modifier = Modifier,
     article: Article
 ) {
+    var isLoading: ImgState by remember { mutableStateOf(ImgState.Initial) }
 
     Box(
         modifier = modifier
@@ -95,6 +101,7 @@ fun SecondaryArticleCard(
                     .weight(1f),
                 contentAlignment = Alignment.BottomEnd
             ) {
+                LoadingImageStatus(isLoading)
                 AsyncImage(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -102,7 +109,16 @@ fun SecondaryArticleCard(
                     ,
                     model = article.urlToImage,
                     contentDescription = "",
-                    contentScale = ContentScale.FillHeight
+                    contentScale = ContentScale.FillHeight,
+                    onLoading = {
+                        isLoading = ImgState.LoadingImg
+                    },
+                    onSuccess = {
+                        isLoading = ImgState.LoadedImg
+                    },
+                    onError = {
+                        isLoading = ImgState.Error
+                    }
                 )
                 Box(
                     modifier = Modifier
@@ -132,7 +148,7 @@ private fun SecondaryArticleCardPreview() {
     XNewsTheme {
         SecondaryArticleCard(
             article = Article(
-                0,
+                "0",
                 "Антон Похиляк",
                 "Украина возмутилась из-за возвращения России на престижную выставку",
                 "Россия впервые с 2019 года появится на Венецианской биеннале современного искусства — с проектом «Дерево уходит корнями в небо». Об этом сообщает The Art Newspaper Russia",
