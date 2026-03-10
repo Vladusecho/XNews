@@ -13,6 +13,8 @@ object ApiFactory {
     private const val BASE_URL = "https://newsapi.org/v2/"
     private const val API_KEY = BuildConfig.API_KEY
 
+
+
     private val okClient = OkHttpClient.Builder()
         .addInterceptor(HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY

@@ -1,8 +1,6 @@
-package com.vladusecho.xnews.data.models
+package com.vladusecho.xnews.data.remote
 
 import com.google.gson.annotations.SerializedName
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 data class RequestDto(
     @SerializedName("articles") val articles: List<ArticleDto>

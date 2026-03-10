@@ -1,10 +1,6 @@
-package com.vladusecho.xnews.data.models
+package com.vladusecho.xnews.data.remote
 
-import androidx.compose.ui.text.toUpperCase
 import com.google.gson.annotations.SerializedName
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.StringFormat
 
 data class ArticleDto(
     @SerializedName("id") val id: Int,
@@ -14,5 +10,5 @@ data class ArticleDto(
     @SerializedName("url") val url: String,
     @SerializedName("urlToImage") val urlToImage: String?,
     @SerializedName("publishedAt") val publishedAt: String,
-    @SerializedName("content") val content: String
+    @SerializedName("source") val source: SourceDto
 )

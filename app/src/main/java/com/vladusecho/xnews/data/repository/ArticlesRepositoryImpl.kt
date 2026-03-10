@@ -20,7 +20,13 @@ class ArticlesRepositoryImpl @Inject constructor(
     override suspend fun loadArticles(query: String): List<Article> {
         return apiService.getArticles(query).articles.map {
             mapperArticleDtoToArticle(it)
-        }.sortedByDescending { it.date }
+        }
+    }
+
+    override suspend fun loadFourMainArticles(query: String): List<Article> {
+        return apiService.getFourMainArticles(query).articles.map {
+            mapperArticleDtoToArticle(it)
+        }
     }
 
     override suspend fun getFavouriteArticles(): List<Article> =

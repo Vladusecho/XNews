@@ -83,11 +83,6 @@ fun Article(
                 modifier = Modifier
                     .padding(horizontal = 15.dp)
             ) {
-                Text(
-                    text = article.getDateWithAuthor(),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.ExtraLight
-                )
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
                     text = article.title,
