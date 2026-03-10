@@ -6,8 +6,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,29 +16,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -47,117 +41,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.compose.currentBackStackEntryAsState
-import com.vladusecho.xnews.domain.navigation.AppNavGraph
-import com.vladusecho.xnews.domain.navigation.MyNavigationItem
-import com.vladusecho.xnews.domain.navigation.rememberNavState
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.vladusecho.xnews.presentation.customSnackbar.MySnackbarHost
 import com.vladusecho.xnews.presentation.model.HeroFontFamily
+import com.vladusecho.xnews.presentation.model.HotArticleCard
 import com.vladusecho.xnews.presentation.model.MainArticleCard
 import com.vladusecho.xnews.presentation.model.SecondaryArticleCard
 import com.vladusecho.xnews.presentation.viewModel.MainState
 import com.vladusecho.xnews.presentation.viewModel.MainViewModel
-import com.vladusecho.xnews.presentation.viewModel.ViewModelFactory
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModelFactory: ViewModelFactory) {
-
-    val viewModel: MainViewModel = viewModel(factory = viewModelFactory)
-
-    val navState = rememberNavState()
-
-    Scaffold(
-        topBar = {
-            Column {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            text = "Explore",
-                            fontFamily = HeroFontFamily,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Black,
-                            fontSize = 18.sp
-                        )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.White
-                    ),
-                )
-                HorizontalDivider(
-                    modifier = Modifier,
-                    thickness = 0.5.dp,
-                    color = Color.Gray.copy(alpha = 0.5f)
-                )
-            }
-        },
-        bottomBar = {
-            NavigationBar(
-                containerColor = Color.White
-            ) {
-                val navBackStackEntry by navState.navHostController.currentBackStackEntryAsState()
-                val items = listOf(
-                    MyNavigationItem.Home,
-                    MyNavigationItem.Favorite
-                )
-
-//                val unseenNewsState = viewModel.unseenNews.collectAsState()
-//                val unseenNews = unseenNewsState.value
-//                val isWatchedFavouriteState = viewModel.isWatchedFavourite.collectAsState()
-//                val isWatchedFavourite = isWatchedFavouriteState.value
-
-                items.forEach { item ->
-                    val selected = navBackStackEntry?.destination?.hierarchy?.any {
-                        it.route == item.screen.route
-                    } ?: false
-
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            if (!selected) {
-                                navState.navigateTo(item.screen.route)
-                            }
-                        },
-                        icon = {
-
-                            Icon(
-                                imageVector = item.icon,
-                                null
-                            )
-
-                        },
-                        label = {
-                            Text(item.title)
-                        },
-                    )
-                }
-            }
-        }
-    ) { paddingValues ->
-        AppNavGraph(
-            navState.navHostController,
-            homeScreenContent = {
-                HomeScreenContent(
-                    paddingValues, viewModel
-                )
-            },
-            favoriteScreenContent = {
-                FavouriteScreen(
-                    viewModelFactory
-                )
-            }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeScreenContent(
-    paddingValues: PaddingValues,
-    viewModel: MainViewModel
+fun HomeScreenContent(
+    viewModel: MainViewModel = hiltViewModel()
 ) {
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
@@ -174,41 +71,100 @@ private fun HomeScreenContent(
 //        }
 //    }
 
+    val politicArticlesState = viewModel.politicArticlesFlow.collectAsState()
+    val politicArticles = politicArticlesState.value
+    val businessArticlesState = viewModel.businessArticlesFlow.collectAsState()
+    val businessArticles = businessArticlesState.value
+    val economicArticlesState = viewModel.economicArticlesFlow.collectAsState()
+    val economicArticles = economicArticlesState.value
+    val hotArticlesState = viewModel.hotArticlesFlow.collectAsState()
+    val hotArticles = hotArticlesState.value
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(color = Color.White)
-            .padding(paddingValues)
     ) {
         when (currentState) {
-            is MainState.Content -> {
+            MainState.Initial -> {
                 LazyColumn {
+                    item {
+                        TopicLabel(
+                            topicName = "Горячие новости",
+                            onTopicClick = {}
+                        )
+                    }
+                    if (hotArticles.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = Color(0xffFF0606)
+                                )
+                            }
+                        }
+                    } else {
+                        item {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                items(
+                                    items = hotArticles,
+                                    key = { it.id.toString() + it.urlToImage }
+                                ) {
+                                    HotArticleCard(
+                                        article = it,
+                                        modifier = Modifier
+                                    )
+                                }
+                            }
+                        }
+                    }
                     item {
                         TopicLabel(
                             topicName = "Политика",
                             onTopicClick = {}
                         )
                     }
-                    item {
-                        MainArticleCard(
-                            article = currentState.politicArticles.first()
-                        )
-                    }
-                    currentState.politicArticles.takeLast(3).forEachIndexed { index, article ->
+                    if (politicArticles.isEmpty()) {
                         item {
                             Box(
-                                modifier = Modifier.padding(16.dp)
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
                             ) {
-                                SecondaryArticleCard(
-                                    article = article
+                                CircularProgressIndicator(
+                                    color = Color(0xffFF0606)
                                 )
                             }
-                            if (index != 2) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    color = Color.Gray.copy(alpha = 0.2f),
-                                    thickness = 1.dp
-                                )
+                        }
+                    } else {
+
+                        item {
+                            MainArticleCard(
+                                article = politicArticles.first()
+                            )
+                        }
+                        politicArticles.takeLast(3).forEachIndexed { index, article ->
+                            item(
+                                key = article.id.toString() + article.urlToImage
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    SecondaryArticleCard(
+                                        article = article
+                                    )
+                                }
+                                if (index != 2) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        color = Color.Gray.copy(alpha = 0.2f),
+                                        thickness = 1.dp
+                                    )
+                                }
                             }
                         }
                     }
@@ -218,26 +174,42 @@ private fun HomeScreenContent(
                             onTopicClick = {}
                         )
                     }
-                    item {
-                        MainArticleCard(
-                            article = currentState.businessArticles.first()
-                        )
-                    }
-                    currentState.businessArticles.takeLast(3).forEachIndexed { index, article ->
+                    if (businessArticles.isEmpty()) {
                         item {
                             Box(
-                                modifier = Modifier.padding(16.dp)
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
                             ) {
-                                SecondaryArticleCard(
-                                    article = article
+                                CircularProgressIndicator(
+                                    color = Color(0xffFF0606)
                                 )
                             }
-                            if (index != 2) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    color = Color.Gray.copy(alpha = 0.2f),
-                                    thickness = 1.dp
-                                )
+                        }
+                    } else {
+
+                        item {
+                            MainArticleCard(
+                                article = businessArticles.first()
+                            )
+                        }
+                        businessArticles.takeLast(3).forEachIndexed { index, article ->
+                            item(
+                                key = article.id.toString() + article.urlToImage
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    SecondaryArticleCard(
+                                        article = article
+                                    )
+                                }
+                                if (index != 2) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        color = Color.Gray.copy(alpha = 0.2f),
+                                        thickness = 1.dp
+                                    )
+                                }
                             }
                         }
                     }
@@ -247,26 +219,42 @@ private fun HomeScreenContent(
                             onTopicClick = {}
                         )
                     }
-                    item {
-                        MainArticleCard(
-                            article = currentState.economicArticles.first()
-                        )
-                    }
-                    currentState.economicArticles.takeLast(3).forEachIndexed { index, article ->
+                    if (economicArticles.isEmpty()) {
                         item {
                             Box(
-                                modifier = Modifier.padding(16.dp)
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
                             ) {
-                                SecondaryArticleCard(
-                                    article = article
+                                CircularProgressIndicator(
+                                    color = Color(0xffFF0606)
                                 )
                             }
-                            if (index != 2) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    color = Color.Gray.copy(alpha = 0.2f),
-                                    thickness = 1.dp
-                                )
+                        }
+                    } else {
+
+                        item {
+                            MainArticleCard(
+                                article = economicArticles.first()
+                            )
+                        }
+                        economicArticles.takeLast(3).forEachIndexed { index, article ->
+                            item(
+                                key = article.id.toString() + article.urlToImage
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    SecondaryArticleCard(
+                                        article = article
+                                    )
+                                }
+                                if (index != 2) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        color = Color.Gray.copy(alpha = 0.2f),
+                                        thickness = 1.dp
+                                    )
+                                }
                             }
                         }
                     }
@@ -292,7 +280,7 @@ private fun HomeScreenContent(
                 }
             }
 
-            MainState.Initial -> {}
+            is MainState.Content -> TODO()
         }
 
         MySnackbarHost(

@@ -1,4 +1,4 @@
-package com.vladusecho.xnews.domain.navigation
+package com.vladusecho.xnews.presentation.navigation
 
 sealed class Screen(
     val route: String

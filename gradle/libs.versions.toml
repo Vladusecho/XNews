@@ -1,8 +1,9 @@
 [versions]
-agp = "8.13.1"
+agp = "9.1.0"
 converterGson = "3.0.0"
 gson = "2.13.2"
-kotlin = "2.1.21"
+hiltNavigationCompose = "1.3.0"
+kotlin = "2.3.10"
 coreKtx = "1.17.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -14,13 +15,15 @@ composeBom = "2024.09.00"
 retrofit = "2.11.0"
 okHttpClient_version="4.12.0"
 coil_version="3.0.4"
-room="2.6.1"
-dagger="2.57.2"
-ksp="2.1.20-1.0.31"
+room="2.8.4"
+dagger="2.59.2"
+ksp= "2.3.4"
 uiText = "1.10.1"
+hiltAndroid = "2.59.2"
 
 [libraries]
 #Coil
+androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 coil-compose = {group = "io.coil-kt.coil3", name = "coil-compose", version.ref ="coil_version"}
 coil-network = {group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref ="coil_version"}
 #viewModel()
@@ -35,6 +38,9 @@ gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 #Navigation
 navigation-compose = {group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation_version"}
+#Hilt
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
+hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroid" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 icons = { group = "androidx.compose.material", name = "material-icons-extended"}
 room-core = { group = "androidx.room", name = "room-ktx", version.ref = "room"}
@@ -61,4 +67,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp" , version.ref = "ksp"}
-
+hilt-android = {id = "com.google.dagger.hilt.android", version.ref ="hiltAndroid"}

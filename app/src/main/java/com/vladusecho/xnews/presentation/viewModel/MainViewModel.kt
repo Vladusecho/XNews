@@ -7,6 +7,7 @@ import com.vladusecho.xnews.domain.usecases.AddToFavouriteUseCase
 import com.vladusecho.xnews.domain.usecases.CheckDuplicatesUseCase
 import com.vladusecho.xnews.domain.usecases.LoadArticlesUseCase
 import com.vladusecho.xnews.domain.usecases.LoadFourMainArticlesUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,26 +15,37 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
+@HiltViewModel
 class MainViewModel @Inject constructor(
     private val loadArticlesUseCase: LoadArticlesUseCase,
     private val loadFourMainArticlesUseCase: LoadFourMainArticlesUseCase,
     private val addToFavouriteUseCase: AddToFavouriteUseCase,
-    private val checkDuplicatesUseCase: CheckDuplicatesUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<MainState>(MainState.Initial)
     val state = _state.asStateFlow()
 
+    val politicArticlesFlow = MutableStateFlow(listOf<Article>())
+    val businessArticlesFlow = MutableStateFlow(listOf<Article>())
+    val economicArticlesFlow = MutableStateFlow(listOf<Article>())
+    val hotArticlesFlow = MutableStateFlow(listOf<Article>())
+
     init {
         viewModelScope.launch {
+            val hotArticles = loadFourMainArticlesUseCase("Россия")
+            hotArticlesFlow.value = hotArticles
+        }
+        viewModelScope.launch {
             val politicArticles = loadFourMainArticlesUseCase("Политика")
+            politicArticlesFlow.value = politicArticles
+        }
+        viewModelScope.launch {
             val businessArticles = loadFourMainArticlesUseCase("Бизнес")
+            businessArticlesFlow.value = businessArticles
+        }
+        viewModelScope.launch {
             val economicArticles = loadFourMainArticlesUseCase("Экономика")
-            _state.value = MainState.Content(
-                politicArticles,
-                businessArticles,
-                economicArticles
-            )
+            economicArticlesFlow.value = economicArticles
         }
     }
 
@@ -153,11 +165,7 @@ sealed interface MainState {
     data class Content(
         val politicArticles: List<Article>,
         val businessArticles: List<Article>,
-        val economicArticles: List<Article>
+        val economicArticles: List<Article>,
+        val hotArticles: List<Article>,
     ) : MainState
 }
-
-data class TopicWithArticles(
-    val topicName: String,
-    val articles: List<Article>
-)

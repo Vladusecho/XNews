@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 interface Dao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun addToFavourite(articleModel: ArticleModel)
+    suspend fun addToFavourite(articleModel: ArticleModel)
 
     @Query("DELETE FROM favourite_articles WHERE id=:id")
     suspend fun deleteFromFavourite(id: Int)

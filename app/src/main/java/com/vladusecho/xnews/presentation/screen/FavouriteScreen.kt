@@ -54,130 +54,128 @@ import com.vladusecho.xnews.presentation.mySwiper.MySwiper
 import com.vladusecho.xnews.presentation.mySwiper.SwipeActionType
 import com.vladusecho.xnews.presentation.state.FavouriteState
 import com.vladusecho.xnews.presentation.viewModel.FavouriteViewModel
-import com.vladusecho.xnews.presentation.viewModel.ViewModelFactory
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouriteScreen(
-    viewModelFactory: ViewModelFactory
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
-    val viewModel: FavouriteViewModel = viewModel(factory = viewModelFactory)
-
-    val screenState = viewModel.state.collectAsState(FavouriteState.Initial)
-    val currentState = screenState.value
-
-    val articles = viewModel.articles.collectAsState(emptyList())
-
-    var showDialog by remember { mutableStateOf(false) }
-
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Избранное (${articles.value.size})") },
-                actions = {
-                    IconButton({
-                        showDialog = true
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.QuestionMark,
-                            contentDescription = null
-                        )
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            NavigationBar {  }
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.onSecondary)
-                .padding(paddingValues)
-                .border(BorderStroke(0.5.dp, MaterialTheme.colorScheme.onSecondary))
-        ) {
-            LazyColumn {
-                when (currentState) {
-                    FavouriteState.Initial -> {}
-                    FavouriteState.Loading -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(top = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Загрузка...")
-                            }
-                        }
-                    }
-
-                    is FavouriteState.Content -> {
-
-                        if (articles.value.isEmpty()) {
-                            item {
-                                Box(
-                                    modifier = Modifier.padding(16.dp)
-                                ) {
-                                    Text("Смахните любую статью влево, чтобы добавить ее в избранное!")
-                                }
-                            }
-                        }
-
-                        items(
-                            items = articles.value,
-                            key = { it.id })
-                        {
-                            Box(
-                                modifier = Modifier.animateItem()
-                            ) {
-                                MySwiper(
-                                    article = it,
-                                    swipeActionType = SwipeActionType.DELETE_FROM_FAVOURITE
-                                ) {
-                                    viewModel.deleteFromFavourite(it.id)
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("\uD83D\uDDD1\uFE0F Успешно удалено!")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            MySnackbarHost(snackbarHostState = snackbarHostState,
-                modifier = Modifier
-                    .padding(10.dp)
-                    .align(Alignment.BottomCenter))
-        }
-    }
-    if (showDialog) {
-        BasicAlertDialog(
-            onDismissRequest = { showDialog = false },
-            properties = DialogProperties()
-        ) {
-            Card(
-            ) {
-                Column(
-                    modifier = Modifier.padding(15.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("Смахните влево, чтобы удалить статью из избранного!")
-                    TextButton(
-                        onClick = { showDialog = false }
-                    ) {
-                        Text("Спасибо!")
-                    }
-                }
-            }
-        }
-    }
+//    val snackbarHostState = remember { SnackbarHostState() }
+//    val scope = rememberCoroutineScope()
+//
+//    val viewModel: FavouriteViewModel = viewModel(factory = viewModelFactory)
+//
+//    val screenState = viewModel.state.collectAsState(FavouriteState.Initial)
+//    val currentState = screenState.value
+//
+//    val articles = viewModel.articles.collectAsState(emptyList())
+//
+//    var showDialog by remember { mutableStateOf(false) }
+//
+//
+//    Scaffold(
+//        topBar = {
+//            TopAppBar(
+//                title = { Text("Избранное (${articles.value.size})") },
+//                actions = {
+//                    IconButton({
+//                        showDialog = true
+//                    }) {
+//                        Icon(
+//                            imageVector = Icons.Default.QuestionMark,
+//                            contentDescription = null
+//                        )
+//                    }
+//                }
+//            )
+//        },
+//        bottomBar = {
+//            NavigationBar {  }
+//        }
+//    ) { paddingValues ->
+//        Box(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .background(MaterialTheme.colorScheme.onSecondary)
+//                .padding(paddingValues)
+//                .border(BorderStroke(0.5.dp, MaterialTheme.colorScheme.onSecondary))
+//        ) {
+//            LazyColumn {
+//                when (currentState) {
+//                    FavouriteState.Initial -> {}
+//                    FavouriteState.Loading -> {
+//                        item {
+//                            Box(
+//                                modifier = Modifier
+//                                    .fillMaxSize()
+//                                    .padding(top = 10.dp),
+//                                contentAlignment = Alignment.Center
+//                            ) {
+//                                Text("Загрузка...")
+//                            }
+//                        }
+//                    }
+//
+//                    is FavouriteState.Content -> {
+//
+//                        if (articles.value.isEmpty()) {
+//                            item {
+//                                Box(
+//                                    modifier = Modifier.padding(16.dp)
+//                                ) {
+//                                    Text("Смахните любую статью влево, чтобы добавить ее в избранное!")
+//                                }
+//                            }
+//                        }
+//
+//                        items(
+//                            items = articles.value,
+//                            key = { it.id })
+//                        {
+//                            Box(
+//                                modifier = Modifier.animateItem()
+//                            ) {
+//                                MySwiper(
+//                                    article = it,
+//                                    swipeActionType = SwipeActionType.DELETE_FROM_FAVOURITE
+//                                ) {
+//                                    viewModel.deleteFromFavourite(it.id)
+//                                    scope.launch {
+//                                        snackbarHostState.showSnackbar("\uD83D\uDDD1\uFE0F Успешно удалено!")
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//            MySnackbarHost(snackbarHostState = snackbarHostState,
+//                modifier = Modifier
+//                    .padding(10.dp)
+//                    .align(Alignment.BottomCenter))
+//        }
+//    }
+//    if (showDialog) {
+//        BasicAlertDialog(
+//            onDismissRequest = { showDialog = false },
+//            properties = DialogProperties()
+//        ) {
+//            Card(
+//            ) {
+//                Column(
+//                    modifier = Modifier.padding(15.dp),
+//                    horizontalAlignment = Alignment.CenterHorizontally
+//                ) {
+//                    Text("Смахните влево, чтобы удалить статью из избранного!")
+//                    TextButton(
+//                        onClick = { showDialog = false }
+//                    ) {
+//                        Text("Спасибо!")
+//                    }
+//                }
+//            }
+//        }
+//    }
 }
 
