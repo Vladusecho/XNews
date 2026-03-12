@@ -23,7 +23,6 @@ hiltAndroid = "2.59.2"
 
 [libraries]
 #Coil
-androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 coil-compose = {group = "io.coil-kt.coil3", name = "coil-compose", version.ref ="coil_version"}
 coil-network = {group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref ="coil_version"}
 #viewModel()
@@ -39,6 +38,7 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 #Navigation
 navigation-compose = {group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation_version"}
 #Hilt
+androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroid" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

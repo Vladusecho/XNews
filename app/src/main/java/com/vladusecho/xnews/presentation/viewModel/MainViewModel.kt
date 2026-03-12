@@ -8,6 +8,7 @@ import com.vladusecho.xnews.domain.usecases.CheckDuplicatesUseCase
 import com.vladusecho.xnews.domain.usecases.LoadArticlesUseCase
 import com.vladusecho.xnews.domain.usecases.LoadFourMainArticlesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,20 +31,24 @@ class MainViewModel @Inject constructor(
     val economicArticlesFlow = MutableStateFlow(listOf<Article>())
     val hotArticlesFlow = MutableStateFlow(listOf<Article>())
 
+    private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
+
+    }
+
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             val hotArticles = loadFourMainArticlesUseCase("Россия")
             hotArticlesFlow.value = hotArticles
         }
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             val politicArticles = loadFourMainArticlesUseCase("Политика")
             politicArticlesFlow.value = politicArticles
         }
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             val businessArticles = loadFourMainArticlesUseCase("Бизнес")
             businessArticlesFlow.value = businessArticles
         }
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             val economicArticles = loadFourMainArticlesUseCase("Экономика")
             economicArticlesFlow.value = economicArticles
         }

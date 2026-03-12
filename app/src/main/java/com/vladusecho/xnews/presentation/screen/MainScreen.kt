@@ -115,7 +115,7 @@ fun HomeScreenContent(
                             ) {
                                 items(
                                     items = hotArticles,
-                                    key = { it.id.toString() + it.urlToImage }
+                                    key = { it.id + it.urlToImage }
                                 ) {
                                     HotArticleCard(
                                         article = it,
@@ -151,7 +151,7 @@ fun HomeScreenContent(
                         }
                         politicArticles.takeLast(3).forEachIndexed { index, article ->
                             item(
-                                key = article.id.toString() + article.urlToImage
+                                key = article.id + article.urlToImage
                             ) {
                                 Box(
                                     modifier = Modifier.padding(16.dp)
