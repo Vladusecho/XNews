@@ -6,7 +6,7 @@
 
 Приложение для отображения новостей и статей, созданное с использованием современных технологий Android.
 
-## 📸 Скриншоты (First Version)
+## 📸 Скриншоты (Первая версия)
 
 <div align="center">
   <img width="30%" alt="Главный экран" src="https://github.com/user-attachments/assets/f1e26bd3-da7f-4a6a-8d1d-877efb967eb2" />
@@ -17,7 +17,7 @@
 
 </div>
 
-## 📸 Скриншоты (Second Version - redesign)
+## 📸 Скриншоты (Новая версия)
 
 ## ✨ Особенности
 
