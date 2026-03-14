@@ -1,6 +1,7 @@
 package com.vladusecho.xnews.presentation.model
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,7 +38,8 @@ import java.text.SimpleDateFormat
 @Composable
 fun SecondaryArticleCard(
     modifier: Modifier = Modifier,
-    article: Article
+    article: Article,
+    onArticleClick: (String) -> Unit
 ) {
     var isLoading: ImgState by remember { mutableStateOf(ImgState.Initial) }
 
@@ -45,6 +47,10 @@ fun SecondaryArticleCard(
         modifier = modifier
             .fillMaxWidth()
             .height(120.dp)
+            .clickable {
+                onArticleClick(article.url)
+            }
+            .clip(RoundedCornerShape(5.dp))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -150,7 +156,7 @@ private fun SecondaryArticleCardPreview() {
                 "2026-03-08T15:27:07Z".toArticleDateFormat(),
                 source = "Lenta"
             )
-        )
+        ) {}
     }
 }
 

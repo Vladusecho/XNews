@@ -1,6 +1,7 @@
 package com.vladusecho.xnews.presentation.model
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,7 +36,8 @@ import com.vladusecho.xnews.ui.theme.XNewsTheme
 @Composable
 fun HotArticleCard(
     modifier: Modifier = Modifier,
-    article: Article
+    article: Article,
+    onArticleClick: (String) -> Unit
 ) {
 
     var isLoading: ImgState by remember { mutableStateOf(ImgState.Initial) }
@@ -44,6 +46,9 @@ fun HotArticleCard(
         modifier = modifier
             .width(300.dp)
             .height(130.dp)
+            .clickable {
+                onArticleClick(article.url)
+            }
             .clip(RoundedCornerShape(10))
     ) {
         LoadingImageStatus(isLoading)
@@ -123,6 +128,6 @@ private fun HotArticleCardPreview() {
                 "2026-03-08T15:27:07Z".toArticleDateFormat(),
                 source = "Lenta"
             )
-        )
+        ) {}
     }
 }

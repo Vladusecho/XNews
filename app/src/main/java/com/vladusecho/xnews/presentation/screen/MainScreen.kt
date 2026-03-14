@@ -1,5 +1,7 @@
 package com.vladusecho.xnews.presentation.screen
 
+import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,17 +26,19 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.vladusecho.xnews.domain.models.Article
 import com.vladusecho.xnews.presentation.customSnackbar.MySnackbarHost
 import com.vladusecho.xnews.presentation.model.HeroFontFamily
 import com.vladusecho.xnews.presentation.model.HotArticleCard
@@ -63,6 +67,8 @@ fun HomeScreenContent(
 //        }
 //    }
 
+    val context = LocalContext.current
+
     val politicArticlesState = viewModel.politicArticlesFlow.collectAsState()
     val politicArticles = politicArticlesState.value
     val scienceArticlesState = viewModel.scienceArticlesFlow.collectAsState()
@@ -77,7 +83,10 @@ fun HomeScreenContent(
     val listState = rememberLazyListState()
 
     val lastArticleKey = remember(othersArticles) {
-        Log.d("LaunchedEffect", "${othersArticles.lastOrNull()} - ${othersArticles.lastOrNull()?.id}")
+        Log.d(
+            "LaunchedEffect",
+            "${othersArticles.lastOrNull()} - ${othersArticles.lastOrNull()?.id}"
+        )
         othersArticles.lastOrNull()?.id
     }
 
@@ -128,10 +137,13 @@ fun HomeScreenContent(
                                 items(
                                     items = hotArticles,
                                     key = { it.id + it.urlToImage }
-                                ) {
+                                ) { article ->
                                     HotArticleCard(
-                                        article = it,
-                                        modifier = Modifier
+                                        article = article,
+                                        modifier = Modifier,
+                                        onArticleClick = {
+                                            showArticleInBrowser(article, context)
+                                        }
                                     )
                                 }
                             }
@@ -158,7 +170,10 @@ fun HomeScreenContent(
 
                         item {
                             MainArticleCard(
-                                article = politicArticles.first()
+                                article = politicArticles.first(),
+                                onArticleClick = {
+                                    showArticleInBrowser(scienceArticles.first(), context)
+                                }
                             )
                         }
                         politicArticles.takeLast(3).forEachIndexed { index, article ->
@@ -169,7 +184,10 @@ fun HomeScreenContent(
                                     modifier = Modifier.padding(16.dp)
                                 ) {
                                     SecondaryArticleCard(
-                                        article = article
+                                        article = article,
+                                        onArticleClick = {
+                                            showArticleInBrowser(article, context)
+                                        }
                                     )
                                 }
                                 if (index != 2) {
@@ -203,7 +221,10 @@ fun HomeScreenContent(
 
                         item {
                             MainArticleCard(
-                                article = economicArticles.first()
+                                article = economicArticles.first(),
+                                onArticleClick = {
+                                    showArticleInBrowser(scienceArticles.first(), context)
+                                }
                             )
                         }
                         economicArticles.takeLast(3).forEachIndexed { index, article ->
@@ -214,7 +235,10 @@ fun HomeScreenContent(
                                     modifier = Modifier.padding(16.dp)
                                 ) {
                                     SecondaryArticleCard(
-                                        article = article
+                                        article = article,
+                                        onArticleClick = {
+                                            showArticleInBrowser(article, context)
+                                        }
                                     )
                                 }
                                 if (index != 2) {
@@ -248,7 +272,10 @@ fun HomeScreenContent(
 
                         item {
                             MainArticleCard(
-                                article = scienceArticles.first()
+                                article = scienceArticles.first(),
+                                onArticleClick = {
+                                    showArticleInBrowser(scienceArticles.first(), context)
+                                }
                             )
                         }
                         scienceArticles.takeLast(3).forEachIndexed { index, article ->
@@ -259,7 +286,10 @@ fun HomeScreenContent(
                                     modifier = Modifier.padding(16.dp)
                                 ) {
                                     SecondaryArticleCard(
-                                        article = article
+                                        article = article,
+                                        onArticleClick = {
+                                            showArticleInBrowser(article, context)
+                                        }
                                     )
                                 }
                                 if (index != 2) {
@@ -287,7 +317,10 @@ fun HomeScreenContent(
                                 modifier = Modifier.padding(16.dp)
                             ) {
                                 SecondaryArticleCard(
-                                    article = article
+                                    article = article,
+                                    onArticleClick = {
+                                        showArticleInBrowser(article, context)
+                                    }
                                 )
                             }
                         }
@@ -399,4 +432,14 @@ fun TopicLabel(
             fontSize = 12.sp
         )
     }
+}
+
+private fun showArticleInBrowser(
+    article: Article,
+    context: Context
+) {
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        data = article.url.toUri()
+    }
+    context.startActivity(intent)
 }

@@ -2,12 +2,10 @@ package com.vladusecho.xnews.di
 
 import android.content.Context
 import androidx.room.Room
-import androidx.room.RoomDatabase
 import com.vladusecho.xnews.data.local.Dao
 import com.vladusecho.xnews.data.local.FavouriteDatabase
 import com.vladusecho.xnews.data.remote.ApiFactory
 import com.vladusecho.xnews.data.remote.ApiService
-import com.vladusecho.xnews.data.repository.ArticlesRepositoryImpl
 import com.vladusecho.xnews.data.repository.TestRepositoryImpl
 import com.vladusecho.xnews.domain.repository.ArticlesRepository
 import dagger.Binds
@@ -24,7 +22,7 @@ interface DataModule {
 
     @Binds
     @Singleton
-    fun bindArticlesRepository(impl: ArticlesRepositoryImpl): ArticlesRepository
+    fun bindArticlesRepository(impl: TestRepositoryImpl): ArticlesRepository
 
     companion object {
 
