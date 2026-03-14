@@ -8,6 +8,7 @@ import com.vladusecho.xnews.data.local.FavouriteDatabase
 import com.vladusecho.xnews.data.remote.ApiFactory
 import com.vladusecho.xnews.data.remote.ApiService
 import com.vladusecho.xnews.data.repository.ArticlesRepositoryImpl
+import com.vladusecho.xnews.data.repository.TestRepositoryImpl
 import com.vladusecho.xnews.domain.repository.ArticlesRepository
 import dagger.Binds
 import dagger.Module

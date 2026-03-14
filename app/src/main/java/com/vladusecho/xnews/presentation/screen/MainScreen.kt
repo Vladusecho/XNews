@@ -1,11 +1,8 @@
 package com.vladusecho.xnews.presentation.screen
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,27 +12,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,7 +40,7 @@ import com.vladusecho.xnews.presentation.model.HeroFontFamily
 import com.vladusecho.xnews.presentation.model.HotArticleCard
 import com.vladusecho.xnews.presentation.model.MainArticleCard
 import com.vladusecho.xnews.presentation.model.SecondaryArticleCard
-import com.vladusecho.xnews.presentation.state.ImgState
+import com.vladusecho.xnews.presentation.viewModel.MainCommand
 import com.vladusecho.xnews.presentation.viewModel.MainState
 import com.vladusecho.xnews.presentation.viewModel.MainViewModel
 import kotlinx.coroutines.launch
@@ -65,8 +57,6 @@ fun HomeScreenContent(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    val listState = rememberLazyListState()
-
 //    val showFab by remember {
 //        derivedStateOf {
 //            listState.firstVisibleItemIndex > 0
@@ -75,12 +65,32 @@ fun HomeScreenContent(
 
     val politicArticlesState = viewModel.politicArticlesFlow.collectAsState()
     val politicArticles = politicArticlesState.value
-    val businessArticlesState = viewModel.businessArticlesFlow.collectAsState()
-    val businessArticles = businessArticlesState.value
+    val scienceArticlesState = viewModel.scienceArticlesFlow.collectAsState()
+    val scienceArticles = scienceArticlesState.value
     val economicArticlesState = viewModel.economicArticlesFlow.collectAsState()
     val economicArticles = economicArticlesState.value
     val hotArticlesState = viewModel.hotArticlesFlow.collectAsState()
     val hotArticles = hotArticlesState.value
+    val othersArticlesState = viewModel.othersArticlesFlow.collectAsState()
+    val othersArticles = othersArticlesState.value
+
+    val listState = rememberLazyListState()
+
+    val lastArticleKey = remember(othersArticles) {
+        Log.d("LaunchedEffect", "${othersArticles.lastOrNull()} - ${othersArticles.lastOrNull()?.id}")
+        othersArticles.lastOrNull()?.id
+    }
+
+    LaunchedEffect(listState, lastArticleKey) {
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.map { it.key }
+        }.collect { visibleKeys ->
+            if (lastArticleKey != null && visibleKeys.contains(lastArticleKey)) {
+                Log.d("LaunchedEffect", "last article is visible")
+                viewModel.processCommand(MainCommand.LoadOthersNews)
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -89,7 +99,9 @@ fun HomeScreenContent(
     ) {
         when (currentState) {
             MainState.Initial -> {
-                LazyColumn {
+                LazyColumn(
+                    state = listState
+                ) {
                     item {
                         TopicLabel(
                             topicName = "Горячие новости",
@@ -172,51 +184,6 @@ fun HomeScreenContent(
                     }
                     item {
                         TopicLabel(
-                            topicName = "Бизнес",
-                            onTopicClick = {}
-                        )
-                    }
-                    if (businessArticles.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    color = Color(0xffFF0606)
-                                )
-                            }
-                        }
-                    } else {
-
-                        item {
-                            MainArticleCard(
-                                article = businessArticles.first()
-                            )
-                        }
-                        businessArticles.takeLast(3).forEachIndexed { index, article ->
-                            item(
-                                key = article.id + article.urlToImage
-                            ) {
-                                Box(
-                                    modifier = Modifier.padding(16.dp)
-                                ) {
-                                    SecondaryArticleCard(
-                                        article = article
-                                    )
-                                }
-                                if (index != 2) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        color = Color.Gray.copy(alpha = 0.2f),
-                                        thickness = 1.dp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    item {
-                        TopicLabel(
                             topicName = "Экономика",
                             onTopicClick = {}
                         )
@@ -241,7 +208,7 @@ fun HomeScreenContent(
                         }
                         economicArticles.takeLast(3).forEachIndexed { index, article ->
                             item(
-                                key = article.id.toString() + article.urlToImage
+                                key = article.id + article.urlToImage
                             ) {
                                 Box(
                                     modifier = Modifier.padding(16.dp)
@@ -257,6 +224,94 @@ fun HomeScreenContent(
                                         thickness = 1.dp
                                     )
                                 }
+                            }
+                        }
+                    }
+                    item {
+                        TopicLabel(
+                            topicName = "Наука",
+                            onTopicClick = {}
+                        )
+                    }
+                    if (scienceArticles.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = Color(0xffFF0606)
+                                )
+                            }
+                        }
+                    } else {
+
+                        item {
+                            MainArticleCard(
+                                article = scienceArticles.first()
+                            )
+                        }
+                        scienceArticles.takeLast(3).forEachIndexed { index, article ->
+                            item(
+                                key = article.id + article.urlToImage
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    SecondaryArticleCard(
+                                        article = article
+                                    )
+                                }
+                                if (index != 2) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        color = Color.Gray.copy(alpha = 0.2f),
+                                        thickness = 1.dp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    item {
+                        TopicLabel(
+                            topicName = "Другие новости",
+                            onTopicClick = {}
+                        )
+                    }
+                    if (othersArticles.isNotEmpty()) {
+                        items(
+                            items = othersArticles,
+                            key = { article -> article.id }
+                        ) { article ->
+                            Box(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                SecondaryArticleCard(
+                                    article = article
+                                )
+                            }
+                        }
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.padding(16.dp),
+                                    color = Color(0xffFF0606)
+                                )
+                            }
+                        }
+                    } else {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = Color(0xffFF0606)
+                                )
                             }
                         }
                     }
@@ -282,7 +337,9 @@ fun HomeScreenContent(
                 }
             }
 
-            is MainState.Content -> TODO()
+            is MainState.Content -> {
+
+            }
         }
 
         MySnackbarHost(
@@ -305,34 +362,6 @@ fun HomeScreenContent(
 }
 
 @Composable
-fun AnimatedFAB(
-    showFab: Boolean,
-    listState: LazyListState
-) {
-    val scope = rememberCoroutineScope()
-
-    AnimatedVisibility(
-        visible = showFab,
-        enter = fadeIn() + scaleIn(),
-        exit = fadeOut() + scaleOut()
-    ) {
-        FloatingActionButton(
-            onClick = {
-                scope.launch {
-                    listState.animateScrollToItem(0)
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.onSecondary,
-            contentColor = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier
-                .padding(bottom = 16.dp)
-        ) {
-            Icon(Icons.Default.ArrowUpward, null)
-        }
-    }
-}
-
-@Composable
 fun TopicLabel(
     modifier: Modifier = Modifier,
     topicName: String,
@@ -341,7 +370,10 @@ fun TopicLabel(
 
     Row(
         modifier = modifier
-            .padding(16.dp),
+            .padding(16.dp)
+            .clickable {
+                onTopicClick(topicName)
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         VerticalDivider(

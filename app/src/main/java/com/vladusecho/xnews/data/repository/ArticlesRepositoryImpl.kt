@@ -23,8 +23,8 @@ class ArticlesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun loadFourMainArticles(query: String): List<Article> {
-        return apiService.getFourMainArticles(query).articles.map {
+    override suspend fun loadSomeMainArticles(query: String, count: Int, page: Int): List<Article> {
+        return apiService.getSomeMainArticles(query, count, page).articles.map {
             mapperArticleDtoToArticle(it)
         }
     }

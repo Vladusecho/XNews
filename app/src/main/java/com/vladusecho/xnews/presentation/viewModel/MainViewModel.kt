@@ -1,17 +1,19 @@
 package com.vladusecho.xnews.presentation.viewModel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vladusecho.xnews.domain.models.Article
 import com.vladusecho.xnews.domain.usecases.AddToFavouriteUseCase
-import com.vladusecho.xnews.domain.usecases.CheckDuplicatesUseCase
 import com.vladusecho.xnews.domain.usecases.LoadArticlesUseCase
-import com.vladusecho.xnews.domain.usecases.LoadFourMainArticlesUseCase
+import com.vladusecho.xnews.domain.usecases.LoadSomeMainArticlesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,7 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val loadArticlesUseCase: LoadArticlesUseCase,
-    private val loadFourMainArticlesUseCase: LoadFourMainArticlesUseCase,
+    private val loadSomeMainArticlesUseCase: LoadSomeMainArticlesUseCase,
     private val addToFavouriteUseCase: AddToFavouriteUseCase,
 ) : ViewModel() {
 
@@ -27,30 +29,60 @@ class MainViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     val politicArticlesFlow = MutableStateFlow(listOf<Article>())
-    val businessArticlesFlow = MutableStateFlow(listOf<Article>())
+    val scienceArticlesFlow = MutableStateFlow(listOf<Article>())
     val economicArticlesFlow = MutableStateFlow(listOf<Article>())
     val hotArticlesFlow = MutableStateFlow(listOf<Article>())
+    val othersArticlesFlow = MutableStateFlow(listOf<Article>())
 
-    private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
+    val isLoadingMore = MutableStateFlow(false)
+
+    val page = MutableStateFlow(2)
+
+
+    private val exceptionHandler = CoroutineExceptionHandler { _, _ ->
 
     }
 
     init {
         viewModelScope.launch(exceptionHandler) {
-            val hotArticles = loadFourMainArticlesUseCase("Россия")
+            val hotArticles = loadSomeMainArticlesUseCase("Россия", 10)
             hotArticlesFlow.value = hotArticles
         }
         viewModelScope.launch(exceptionHandler) {
-            val politicArticles = loadFourMainArticlesUseCase("Политика")
+            val politicArticles = loadSomeMainArticlesUseCase("Политика", 4)
             politicArticlesFlow.value = politicArticles
         }
         viewModelScope.launch(exceptionHandler) {
-            val businessArticles = loadFourMainArticlesUseCase("Бизнес")
-            businessArticlesFlow.value = businessArticles
+            val scienceArticles = loadSomeMainArticlesUseCase("Наука", 4)
+            scienceArticlesFlow.value = scienceArticles
         }
         viewModelScope.launch(exceptionHandler) {
-            val economicArticles = loadFourMainArticlesUseCase("Экономика")
+            val economicArticles = loadSomeMainArticlesUseCase("Экономика", 4)
             economicArticlesFlow.value = economicArticles
+        }
+        viewModelScope.launch(exceptionHandler) {
+            val othersArticles = loadSomeMainArticlesUseCase("Новости", 10)
+            othersArticlesFlow.value = othersArticles
+        }
+    }
+
+    fun processCommand(mainCommand: MainCommand) {
+        when (mainCommand) {
+            is MainCommand.LoadOthersNews -> {
+                viewModelScope.launch {
+                    if (!isLoadingMore.value) {
+                        Log.d("LaunchedEffect", "view model work")
+                        isLoadingMore.value = true
+                        val othersNews = loadSomeMainArticlesUseCase("Новости", 10, page.value)
+                        delay(1000)
+                        othersArticlesFlow.update { prevState ->
+                            prevState + othersNews
+                        }
+                        page.value++
+                        isLoadingMore.value = false
+                    }
+                }
+            }
         }
     }
 
@@ -154,16 +186,16 @@ class MainViewModel @Inject constructor(
 
 sealed interface MainCommand {
 
-
+    data object LoadOthersNews : MainCommand
 }
 
 sealed interface MainState {
 
-    object Initial : MainState
+    data object Initial : MainState
 
 //    data class MainNews(val initArticles: List<Article>) : MainState
 
-    object Loading : MainState
+    data object Loading : MainState
 
     data class Error(val error: String) : MainState
 

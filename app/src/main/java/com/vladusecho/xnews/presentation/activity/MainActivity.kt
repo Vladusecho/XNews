@@ -122,7 +122,7 @@ fun XNewsNavigationBar(
             modifier = modifier
                 .background(Color.White)
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
             items.forEach { navItem ->
