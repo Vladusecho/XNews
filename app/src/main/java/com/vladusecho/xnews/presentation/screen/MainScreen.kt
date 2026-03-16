@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,28 +18,37 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.vladusecho.xnews.R
 import com.vladusecho.xnews.domain.models.Article
 import com.vladusecho.xnews.presentation.customSnackbar.MySnackbarHost
 import com.vladusecho.xnews.presentation.model.HeroFontFamily
@@ -48,6 +58,7 @@ import com.vladusecho.xnews.presentation.model.SecondaryArticleCard
 import com.vladusecho.xnews.presentation.viewModel.MainCommand
 import com.vladusecho.xnews.presentation.viewModel.MainState
 import com.vladusecho.xnews.presentation.viewModel.MainViewModel
+import java.text.SimpleDateFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,13 +69,14 @@ fun HomeScreenContent(
     val currentState = screenState.value
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     val context = LocalContext.current
 
     val listState = rememberLazyListState()
 
     val lastId by viewModel.lastIndex.collectAsState()
+
+    val time by viewModel.time.collectAsState()
 
     val lastArticleKey = remember(lastId) {
         Log.d(
@@ -85,87 +97,150 @@ fun HomeScreenContent(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(color = Color.White)
-    ) {
-        when (currentState) {
-            is MainState.Content -> {
-                LazyColumn(
-                    state = listState
-                ) {
-                    currentState.content.forEach { content ->
-                        if (content.isRow) {
-                            item {
-                                TopicLabel(
-                                    topicName = content.title,
-                                    onTopicClick = {}
+    Scaffold(
+        topBar = {
+            Column {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            val formatter = SimpleDateFormat.getInstance()
+                            Text(
+                                text = "Explore",
+                                fontFamily = HeroFontFamily,
+                                fontWeight = FontWeight.Normal,
+                                color = Color.Black,
+                                fontSize = 19.sp,
+                                lineHeight = 10.sp
+                            )
+                            Text(
+                                text = formatter.format(time),
+                                fontFamily = HeroFontFamily,
+                                fontWeight = FontWeight.Normal,
+                                color = Color.Black,
+                                fontSize = 10.sp,
+                                lineHeight = 10.sp
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.White
+                    ),
+                    actions = {
+                        IconButton({}) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_search),
+                                contentDescription = "search icon",
+                                tint = Color.Black
+                            )
+                        }
+                        IconButton({
+                            viewModel.processCommand(MainCommand.RefreshNews)
+                        }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_refresh),
+                                contentDescription = "refresh icon",
+                                tint = Color.Black
+                            )
+                        }
+
+                    },
+                    navigationIcon = {
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .clip(
+                                    RoundedCornerShape(
+                                        topStart = 0.dp,
+                                        topEnd = 15.dp,
+                                        bottomEnd = 0.dp,
+                                        bottomStart = 15.dp
+                                    )
                                 )
-                            }
-                            item {
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    items(
-                                        items = content.articles,
-                                        key = { it.id + it.urlToImage }
-                                    ) { article ->
-                                        HotArticleCard(
-                                            article = article,
-                                            modifier = Modifier,
-                                            onArticleClick = {
-                                                showArticleInBrowser(article, context)
-                                            }
+                                .background(
+                                    brush = Brush.verticalGradient(
+                                        listOf(
+                                            Color.Red,
+                                            Color(0xff61070A)
                                         )
-                                    }
-                                }
-                            }
-                        } else if (content.isInfinityColumn) {
-                            if (!content.isTitleInvisible) {
+                                    )
+                                )
+                        ) {
+                            Text(
+                                text = "XNews",
+                                fontFamily = HeroFontFamily,
+                                fontWeight = FontWeight.Normal,
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(
+                                    vertical = 8.dp,
+                                    horizontal = 4.dp
+                                )
+                            )
+                        }
+                    }
+                )
+                HorizontalDivider(
+                    modifier = Modifier,
+                    thickness = 0.5.dp,
+                    color = Color.Gray.copy(alpha = 0.5f)
+                )
+            }
+        },
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(color = Color.White)
+        ) {
+            when (currentState) {
+                is MainState.Content -> {
+                    LazyColumn(
+                        state = listState
+                    ) {
+                        currentState.content.forEach { content ->
+                            if (content.isRow) {
                                 item {
                                     TopicLabel(
                                         topicName = content.title,
-                                        isButtonVisible = false,
                                         onTopicClick = {}
                                     )
                                 }
-                            }
-                            items(
-                                items = content.articles,
-                                key = { article -> article.id }
-                            ) { article ->
-                                Box(
-                                    modifier = Modifier.padding(16.dp)
-                                ) {
-                                    SecondaryArticleCard(
-                                        article = article,
-                                        onArticleClick = {
-                                            showArticleInBrowser(article, context)
+                                item {
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        items(
+                                            items = content.articles,
+                                            key = { it.id + it.urlToImage }
+                                        ) { article ->
+                                            HotArticleCard(
+                                                article = article,
+                                                modifier = Modifier,
+                                                onArticleClick = {
+                                                    showArticleInBrowser(article, context)
+                                                }
+                                            )
                                         }
-                                    )
-                                }
-                            }
-                        } else {
-                            item {
-                                TopicLabel(
-                                    topicName = content.title,
-                                    onTopicClick = {}
-                                )
-                            }
-                            item {
-                                MainArticleCard(
-                                    article = content.articles.first(),
-                                    onArticleClick = {
-                                        showArticleInBrowser(content.articles.first(), context)
                                     }
-                                )
-                            }
-                            content.articles.takeLast(3).forEachIndexed { index, article ->
-                                item(
-                                    key = article.id + article.urlToImage
-                                ) {
+                                }
+                            } else if (content.isInfinityColumn) {
+                                if (!content.isTitleInvisible) {
+                                    item {
+                                        TopicLabel(
+                                            topicName = content.title,
+                                            isButtonVisible = false,
+                                            onTopicClick = {}
+                                        )
+                                    }
+                                }
+                                items(
+                                    items = content.articles,
+                                    key = { article -> article.id }
+                                ) { article ->
                                     Box(
                                         modifier = Modifier.padding(16.dp)
                                     ) {
@@ -176,57 +251,88 @@ fun HomeScreenContent(
                                             }
                                         )
                                     }
-                                    if (index != 2) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(horizontal = 16.dp),
-                                            color = Color.Gray.copy(alpha = 0.2f),
-                                            thickness = 1.dp
-                                        )
+                                }
+                            } else {
+                                item {
+                                    TopicLabel(
+                                        topicName = content.title,
+                                        onTopicClick = {}
+                                    )
+                                }
+                                item {
+                                    MainArticleCard(
+                                        article = content.articles.first(),
+                                        onArticleClick = {
+                                            showArticleInBrowser(content.articles.first(), context)
+                                        }
+                                    )
+                                }
+                                content.articles.takeLast(3).forEachIndexed { index, article ->
+                                    item(
+                                        key = article.id + article.urlToImage
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.padding(16.dp)
+                                        ) {
+                                            SecondaryArticleCard(
+                                                article = article,
+                                                onArticleClick = {
+                                                    showArticleInBrowser(article, context)
+                                                }
+                                            )
+                                        }
+                                        if (index != 2) {
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(horizontal = 16.dp),
+                                                color = Color.Gray.copy(alpha = 0.2f),
+                                                thickness = 1.dp
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.padding(16.dp),
-                                color = Color(0xffFF0606)
-                            )
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.padding(16.dp),
+                                    color = Color(0xffFF0606)
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            is MainState.Error -> {
+                is MainState.Error -> {
 
-            }
+                }
 
-            MainState.Initial -> {
+                MainState.Initial -> {
 
-            }
+                }
 
-            MainState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = Color(0xffFF0606)
-                    )
+                MainState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color(0xffFF0606)
+                        )
+                    }
                 }
             }
-        }
 
-        MySnackbarHost(
-            modifier = Modifier
-                .padding(10.dp)
-                .align(Alignment.BottomCenter),
-            snackbarHostState
-        )
+            MySnackbarHost(
+                modifier = Modifier
+                    .padding(10.dp)
+                    .align(Alignment.BottomCenter),
+                snackbarHostState
+            )
+        }
     }
 }
 

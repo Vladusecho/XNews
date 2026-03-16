@@ -1,9 +1,8 @@
 package com.vladusecho.xnews.data.mappers
 
-import java.text.SimpleDateFormat
-import java.util.Locale
+import kotlin.time.Instant
 
 fun String.toArticleDateFormat(): Long {
-    val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
-    return formatter.parse(this)?.time ?: System.currentTimeMillis()
+    val instant = Instant.parse(this)
+    return instant.toEpochMilliseconds()
 }
