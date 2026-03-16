@@ -57,15 +57,8 @@ fun HomeScreenContent(
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
 
-//    val isDuplicateState = viewModel.isDuplicate.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
-//    val showFab by remember {
-//        derivedStateOf {
-//            listState.firstVisibleItemIndex > 0
-//        }
-//    }
 
     val context = LocalContext.current
 
