@@ -5,12 +5,12 @@ import retrofit2.http.Query
 
 interface ApiService {
 
-    @GET("everything?language=ru&sortBy=publishedAt")
+    @GET("everything?language=ru&sortBy=publishedAt&excludeDomains=youtube.com")
     suspend fun getArticles(
         @Query("q") query: String
     ): RequestDto
 
-    @GET("everything?language=ru&sortBy=publishedAt")
+    @GET("everything?language=ru&sortBy=publishedAt&excludeDomains=youtube.com")
     suspend fun getSomeMainArticles(
         @Query("q") query: String,
         @Query("pageSize") count: Int,

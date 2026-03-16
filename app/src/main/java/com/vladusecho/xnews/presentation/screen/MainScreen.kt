@@ -26,6 +26,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
@@ -47,7 +48,6 @@ import com.vladusecho.xnews.presentation.model.SecondaryArticleCard
 import com.vladusecho.xnews.presentation.viewModel.MainCommand
 import com.vladusecho.xnews.presentation.viewModel.MainState
 import com.vladusecho.xnews.presentation.viewModel.MainViewModel
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,32 +62,23 @@ fun HomeScreenContent(
 
     val context = LocalContext.current
 
-    val politicArticlesState = viewModel.politicArticlesFlow.collectAsState()
-    val politicArticles = politicArticlesState.value
-    val scienceArticlesState = viewModel.scienceArticlesFlow.collectAsState()
-    val scienceArticles = scienceArticlesState.value
-    val economicArticlesState = viewModel.economicArticlesFlow.collectAsState()
-    val economicArticles = economicArticlesState.value
-    val hotArticlesState = viewModel.hotArticlesFlow.collectAsState()
-    val hotArticles = hotArticlesState.value
-    val othersArticlesState = viewModel.othersArticlesFlow.collectAsState()
-    val othersArticles = othersArticlesState.value
-
     val listState = rememberLazyListState()
 
-    val lastArticleKey = remember(othersArticles) {
+    val lastId by viewModel.lastIndex.collectAsState()
+
+    val lastArticleKey = remember(lastId) {
         Log.d(
             "LaunchedEffect",
-            "${othersArticles.lastOrNull()} - ${othersArticles.lastOrNull()?.id}"
+            lastId
         )
-        othersArticles.lastOrNull()?.id
+        lastId
     }
 
     LaunchedEffect(listState, lastArticleKey) {
         snapshotFlow {
             listState.layoutInfo.visibleItemsInfo.map { it.key }
         }.collect { visibleKeys ->
-            if (lastArticleKey != null && visibleKeys.contains(lastArticleKey)) {
+            if (lastId != "-1" && visibleKeys.contains(lastArticleKey)) {
                 Log.d("LaunchedEffect", "last article is visible")
                 viewModel.processCommand(MainCommand.LoadOthersNews)
             }
@@ -100,79 +91,51 @@ fun HomeScreenContent(
             .background(color = Color.White)
     ) {
         when (currentState) {
-            MainState.Initial -> {
+            is MainState.Content -> {
                 LazyColumn(
                     state = listState
                 ) {
-                    item {
-                        TopicLabel(
-                            topicName = "Горячие новости",
-                            onTopicClick = {}
-                        )
-                    }
-                    if (hotArticles.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    color = Color(0xffFF0606)
+                    currentState.content.forEach { content ->
+                        if (content.isRow) {
+                            item {
+                                TopicLabel(
+                                    topicName = content.title,
+                                    onTopicClick = {}
                                 )
                             }
-                        }
-                    } else {
-                        item {
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                items(
-                                    items = hotArticles,
-                                    key = { it.id + it.urlToImage }
-                                ) { article ->
-                                    HotArticleCard(
-                                        article = article,
-                                        modifier = Modifier,
-                                        onArticleClick = {
-                                            showArticleInBrowser(article, context)
-                                        }
+                            item {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    items(
+                                        items = content.articles,
+                                        key = { it.id + it.urlToImage }
+                                    ) { article ->
+                                        HotArticleCard(
+                                            article = article,
+                                            modifier = Modifier,
+                                            onArticleClick = {
+                                                showArticleInBrowser(article, context)
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        } else if (content.isInfinityColumn) {
+                            if (!content.isTitleInvisible) {
+                                item {
+                                    TopicLabel(
+                                        topicName = content.title,
+                                        isButtonVisible = false,
+                                        onTopicClick = {}
                                     )
                                 }
                             }
-                        }
-                    }
-                    item {
-                        TopicLabel(
-                            topicName = "Политика",
-                            onTopicClick = {}
-                        )
-                    }
-                    if (politicArticles.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    color = Color(0xffFF0606)
-                                )
-                            }
-                        }
-                    } else {
-
-                        item {
-                            MainArticleCard(
-                                article = politicArticles.first(),
-                                onArticleClick = {
-                                    showArticleInBrowser(scienceArticles.first(), context)
-                                }
-                            )
-                        }
-                        politicArticles.takeLast(3).forEachIndexed { index, article ->
-                            item(
-                                key = article.id + article.urlToImage
-                            ) {
+                            items(
+                                items = content.articles,
+                                key = { article -> article.id }
+                            ) { article ->
                                 Box(
                                     modifier = Modifier.padding(16.dp)
                                 ) {
@@ -183,173 +146,67 @@ fun HomeScreenContent(
                                         }
                                     )
                                 }
-                                if (index != 2) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        color = Color.Gray.copy(alpha = 0.2f),
-                                        thickness = 1.dp
-                                    )
-                                }
                             }
-                        }
-                    }
-                    item {
-                        TopicLabel(
-                            topicName = "Экономика",
-                            onTopicClick = {}
-                        )
-                    }
-                    if (economicArticles.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    color = Color(0xffFF0606)
+                        } else {
+                            item {
+                                TopicLabel(
+                                    topicName = content.title,
+                                    onTopicClick = {}
                                 )
                             }
-                        }
-                    } else {
-
-                        item {
-                            MainArticleCard(
-                                article = economicArticles.first(),
-                                onArticleClick = {
-                                    showArticleInBrowser(scienceArticles.first(), context)
-                                }
-                            )
-                        }
-                        economicArticles.takeLast(3).forEachIndexed { index, article ->
-                            item(
-                                key = article.id + article.urlToImage
-                            ) {
-                                Box(
-                                    modifier = Modifier.padding(16.dp)
-                                ) {
-                                    SecondaryArticleCard(
-                                        article = article,
-                                        onArticleClick = {
-                                            showArticleInBrowser(article, context)
-                                        }
-                                    )
-                                }
-                                if (index != 2) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        color = Color.Gray.copy(alpha = 0.2f),
-                                        thickness = 1.dp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    item {
-                        TopicLabel(
-                            topicName = "Наука",
-                            onTopicClick = {}
-                        )
-                    }
-                    if (scienceArticles.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    color = Color(0xffFF0606)
-                                )
-                            }
-                        }
-                    } else {
-
-                        item {
-                            MainArticleCard(
-                                article = scienceArticles.first(),
-                                onArticleClick = {
-                                    showArticleInBrowser(scienceArticles.first(), context)
-                                }
-                            )
-                        }
-                        scienceArticles.takeLast(3).forEachIndexed { index, article ->
-                            item(
-                                key = article.id + article.urlToImage
-                            ) {
-                                Box(
-                                    modifier = Modifier.padding(16.dp)
-                                ) {
-                                    SecondaryArticleCard(
-                                        article = article,
-                                        onArticleClick = {
-                                            showArticleInBrowser(article, context)
-                                        }
-                                    )
-                                }
-                                if (index != 2) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        color = Color.Gray.copy(alpha = 0.2f),
-                                        thickness = 1.dp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    item {
-                        TopicLabel(
-                            topicName = "Другие новости",
-                            onTopicClick = {}
-                        )
-                    }
-                    if (othersArticles.isNotEmpty()) {
-                        items(
-                            items = othersArticles,
-                            key = { article -> article.id }
-                        ) { article ->
-                            Box(
-                                modifier = Modifier.padding(16.dp)
-                            ) {
-                                SecondaryArticleCard(
-                                    article = article,
+                            item {
+                                MainArticleCard(
+                                    article = content.articles.first(),
                                     onArticleClick = {
-                                        showArticleInBrowser(article, context)
+                                        showArticleInBrowser(content.articles.first(), context)
                                     }
                                 )
                             }
-                        }
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.padding(16.dp),
-                                    color = Color(0xffFF0606)
-                                )
+                            content.articles.takeLast(3).forEachIndexed { index, article ->
+                                item(
+                                    key = article.id + article.urlToImage
+                                ) {
+                                    Box(
+                                        modifier = Modifier.padding(16.dp)
+                                    ) {
+                                        SecondaryArticleCard(
+                                            article = article,
+                                            onArticleClick = {
+                                                showArticleInBrowser(article, context)
+                                            }
+                                        )
+                                    }
+                                    if (index != 2) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(horizontal = 16.dp),
+                                            color = Color.Gray.copy(alpha = 0.2f),
+                                            thickness = 1.dp
+                                        )
+                                    }
+                                }
                             }
                         }
-                    } else {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    color = Color(0xffFF0606)
-                                )
-                            }
+                    }
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.padding(16.dp),
+                                color = Color(0xffFF0606)
+                            )
                         }
                     }
                 }
             }
 
             is MainState.Error -> {
-                LaunchedEffect(Unit) {
-                    scope.launch {
-                        snackbarHostState.showSnackbar("❌ Что-то пошло не так...")
-                    }
-                }
+
+            }
+
+            MainState.Initial -> {
+
             }
 
             MainState.Loading -> {
@@ -362,10 +219,6 @@ fun HomeScreenContent(
                     )
                 }
             }
-
-            is MainState.Content -> {
-
-            }
         }
 
         MySnackbarHost(
@@ -374,16 +227,6 @@ fun HomeScreenContent(
                 .align(Alignment.BottomCenter),
             snackbarHostState
         )
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .padding(10.dp),
-//            contentAlignment = Alignment.BottomEnd
-//        ) {
-//            AnimatedFAB(
-//                showFab, listState
-//            )
-//        }
     }
 }
 
@@ -391,6 +234,7 @@ fun HomeScreenContent(
 fun TopicLabel(
     modifier: Modifier = Modifier,
     topicName: String,
+    isButtonVisible: Boolean = true,
     onTopicClick: (String) -> Unit
 ) {
 
@@ -417,13 +261,15 @@ fun TopicLabel(
             fontSize = 18.sp
         )
         Spacer(modifier.weight(1f))
-        Text(
-            text = "Смотреть больше...",
-            fontFamily = HeroFontFamily,
-            fontWeight = FontWeight.Normal,
-            color = Color(0xffFF0606),
-            fontSize = 12.sp
-        )
+        if (isButtonVisible) {
+            Text(
+                text = "Смотреть больше...",
+                fontFamily = HeroFontFamily,
+                fontWeight = FontWeight.Normal,
+                color = Color(0xffFF0606),
+                fontSize = 12.sp
+            )
+        }
     }
 }
 

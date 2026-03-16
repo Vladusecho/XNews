@@ -8,7 +8,6 @@ import com.vladusecho.xnews.domain.usecases.AddToFavouriteUseCase
 import com.vladusecho.xnews.domain.usecases.LoadArticlesUseCase
 import com.vladusecho.xnews.domain.usecases.LoadSomeMainArticlesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,41 +27,63 @@ class MainViewModel @Inject constructor(
     private val _state = MutableStateFlow<MainState>(MainState.Initial)
     val state = _state.asStateFlow()
 
-    val politicArticlesFlow = MutableStateFlow(listOf<Article>())
-    val scienceArticlesFlow = MutableStateFlow(listOf<Article>())
-    val economicArticlesFlow = MutableStateFlow(listOf<Article>())
-    val hotArticlesFlow = MutableStateFlow(listOf<Article>())
-    val othersArticlesFlow = MutableStateFlow(listOf<Article>())
+    val lastIndex = MutableStateFlow("-1")
 
     val isLoadingMore = MutableStateFlow(false)
 
     val page = MutableStateFlow(2)
 
-
-    private val exceptionHandler = CoroutineExceptionHandler { _, _ ->
-
-    }
+    val mainContent = MutableStateFlow(mutableListOf<MainContent>())
 
     init {
-        viewModelScope.launch(exceptionHandler) {
+        viewModelScope.launch {
+            _state.value = MainState.Loading
             val hotArticles = loadSomeMainArticlesUseCase("Россия", 10)
-            hotArticlesFlow.value = hotArticles
-        }
-        viewModelScope.launch(exceptionHandler) {
+            mainContent.update { prev ->
+                (prev + MainContent(
+                    title = "Горячие новости",
+                    articles = hotArticles,
+                    isRow = true
+                )) as MutableList<MainContent>
+            }
+            _state.value = MainState.Content(mainContent.value)
+
             val politicArticles = loadSomeMainArticlesUseCase("Политика", 4)
-            politicArticlesFlow.value = politicArticles
-        }
-        viewModelScope.launch(exceptionHandler) {
-            val scienceArticles = loadSomeMainArticlesUseCase("Наука", 4)
-            scienceArticlesFlow.value = scienceArticles
-        }
-        viewModelScope.launch(exceptionHandler) {
+            mainContent.update { prev ->
+                (prev + MainContent(
+                    title = "Политика",
+                    articles = politicArticles
+                )) as MutableList<MainContent>
+            }
+
             val economicArticles = loadSomeMainArticlesUseCase("Экономика", 4)
-            economicArticlesFlow.value = economicArticles
-        }
-        viewModelScope.launch(exceptionHandler) {
+            mainContent.update { prev ->
+                (prev + MainContent(
+                    title = "Экономика",
+                    articles = economicArticles
+                )) as MutableList<MainContent>
+            }
+            _state.value = MainState.Content(mainContent.value)
+
+            val scienceArticles = loadSomeMainArticlesUseCase("Наука", 4)
+            mainContent.update { prev ->
+                (prev + MainContent(
+                    title = "Наука",
+                    articles = scienceArticles
+                )) as MutableList<MainContent>
+            }
+            _state.value = MainState.Content(mainContent.value)
+
             val othersArticles = loadSomeMainArticlesUseCase("Новости", 10)
-            othersArticlesFlow.value = othersArticles
+            mainContent.update { prev ->
+                (prev + MainContent(
+                    title = "Другие новости",
+                    articles = othersArticles,
+                    isInfinityColumn = true
+                )) as MutableList<MainContent>
+            }
+            lastIndex.value = othersArticles.last().id
+            _state.value = MainState.Content(mainContent.value)
         }
     }
 
@@ -75,9 +96,16 @@ class MainViewModel @Inject constructor(
                         isLoadingMore.value = true
                         val othersNews = loadSomeMainArticlesUseCase("Новости", 10, page.value)
                         delay(1000)
-                        othersArticlesFlow.update { prevState ->
-                            prevState + othersNews
+                        mainContent.update { prev ->
+                            (prev + MainContent(
+                                title = "Новости",
+                                articles = othersNews,
+                                isInfinityColumn = true,
+                                isTitleInvisible = true
+                            )) as MutableList<MainContent>
                         }
+                        lastIndex.value = othersNews.last().id
+                        _state.value = MainState.Content(mainContent.value)
                         page.value++
                         isLoadingMore.value = false
                     }
@@ -193,16 +221,19 @@ sealed interface MainState {
 
     data object Initial : MainState
 
-//    data class MainNews(val initArticles: List<Article>) : MainState
-
     data object Loading : MainState
 
     data class Error(val error: String) : MainState
 
     data class Content(
-        val politicArticles: List<Article>,
-        val businessArticles: List<Article>,
-        val economicArticles: List<Article>,
-        val hotArticles: List<Article>,
+        val content: List<MainContent>
     ) : MainState
 }
+
+data class MainContent(
+    val articles: List<Article>,
+    val title: String,
+    val isRow: Boolean = false,
+    val isInfinityColumn: Boolean = false,
+    val isTitleInvisible: Boolean = false
+)

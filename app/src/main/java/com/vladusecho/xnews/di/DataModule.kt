@@ -6,6 +6,7 @@ import com.vladusecho.xnews.data.local.Dao
 import com.vladusecho.xnews.data.local.FavouriteDatabase
 import com.vladusecho.xnews.data.remote.ApiFactory
 import com.vladusecho.xnews.data.remote.ApiService
+import com.vladusecho.xnews.data.repository.ArticlesRepositoryImpl
 import com.vladusecho.xnews.data.repository.TestRepositoryImpl
 import com.vladusecho.xnews.domain.repository.ArticlesRepository
 import dagger.Binds
@@ -22,7 +23,7 @@ interface DataModule {
 
     @Binds
     @Singleton
-    fun bindArticlesRepository(impl: TestRepositoryImpl): ArticlesRepository
+    fun bindArticlesRepository(impl: ArticlesRepositoryImpl): ArticlesRepository
 
     companion object {
 
