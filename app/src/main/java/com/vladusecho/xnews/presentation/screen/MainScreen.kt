@@ -192,7 +192,7 @@ fun HomeScreenContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(top = paddingValues.calculateTopPadding())
                 .background(color = Color.White)
         ) {
             when (currentState) {
