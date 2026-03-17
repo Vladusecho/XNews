@@ -7,6 +7,8 @@ interface ArticlesRepository {
 
     suspend fun loadArticles(query: String): List<Article>
 
+    suspend fun loadSomeMainArticles(query: String, count: Int, page: Int): List<Article>
+
     suspend fun getFavouriteArticles(): List<Article>
     fun getFavouriteArticlesFlow(): Flow<List<Article>>
 

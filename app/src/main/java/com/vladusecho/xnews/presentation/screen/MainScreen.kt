@@ -1,432 +1,390 @@
 package com.vladusecho.xnews.presentation.screen
 
+import android.content.Context
+import android.content.Intent
 import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.compose.currentBackStackEntryAsState
-import com.vladusecho.xnews.domain.navigation.AppNavGraph
-import com.vladusecho.xnews.domain.navigation.MyNavigationItem
-import com.vladusecho.xnews.domain.navigation.Screen
-import com.vladusecho.xnews.domain.navigation.rememberNavState
+import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.vladusecho.xnews.R
+import com.vladusecho.xnews.domain.models.Article
 import com.vladusecho.xnews.presentation.customSnackbar.MySnackbarHost
-import com.vladusecho.xnews.presentation.mySwiper.MySwiper
-import com.vladusecho.xnews.presentation.mySwiper.SwipeActionType
-import com.vladusecho.xnews.presentation.state.MainState
+import com.vladusecho.xnews.presentation.model.HeroFontFamily
+import com.vladusecho.xnews.presentation.model.HotArticleCard
+import com.vladusecho.xnews.presentation.model.MainArticleCard
+import com.vladusecho.xnews.presentation.model.SecondaryArticleCard
+import com.vladusecho.xnews.presentation.viewModel.MainCommand
+import com.vladusecho.xnews.presentation.viewModel.MainState
 import com.vladusecho.xnews.presentation.viewModel.MainViewModel
-import com.vladusecho.xnews.presentation.viewModel.ViewModelFactory
-import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModelFactory: ViewModelFactory) {
-
-    val viewModel: MainViewModel = viewModel(factory = viewModelFactory)
-
-    val navState = rememberNavState()
-
-    Scaffold(
-        bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.background
-            ) {
-                val navBackStackEntry by navState.navHostController.currentBackStackEntryAsState()
-                val items = listOf(
-                    MyNavigationItem.Home,
-                    MyNavigationItem.Favorite
-                )
-
-                val unseenNewsState = viewModel.unseenNews.collectAsState()
-                val unseenNews = unseenNewsState.value
-                val isWatchedFavouriteState = viewModel.isWatchedFavourite.collectAsState()
-                val isWatchedFavourite = isWatchedFavouriteState.value
-
-                items.forEach { item ->
-                    val selected = navBackStackEntry?.destination?.hierarchy?.any {
-                        it.route == item.screen.route
-                    } ?: false
-
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            if (!selected) {
-                                navState.navigateTo(item.screen.route)
-                            }
-                            if (item.screen.route == Screen.ROUTE_FAVORITE) {
-                                viewModel.invisibleCounter()
-                            }
-                            if (item.screen.route == Screen.ROUTE_HOME) {
-                                viewModel.visibleCounter()
-                            }
-                        },
-                        icon = {
-                            BadgedBox(
-                                badge = {
-                                    if (!isWatchedFavourite) {
-                                        if (unseenNews > 0 && item.screen.route == Screen.ROUTE_FAVORITE) {
-                                            Badge {
-                                                Text("$unseenNews")
-                                            }
-                                        }
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = item.icon,
-                                    null
-                                )
-                            }
-                        },
-                        label = {
-                            Text(item.title)
-                        },
-                    )
-                }
-            }
-        }
-    ) { paddingValues ->
-        AppNavGraph(
-            navState.navHostController,
-            homeScreenContent = {
-                HomeScreenContent(
-                    paddingValues, viewModel
-                )
-            },
-            favoriteScreenContent = {
-                FavouriteScreen(
-                    viewModelFactory
-                )
-            }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeScreenContent(
-    paddingValues: PaddingValues,
-    viewModel: MainViewModel
+fun HomeScreenContent(
+    viewModel: MainViewModel = hiltViewModel()
 ) {
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
 
-    val isDuplicateState = viewModel.isDuplicate.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+
+    val context = LocalContext.current
 
     val listState = rememberLazyListState()
 
-    val showFab by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex > 0
+    val lastId by viewModel.lastIndex.collectAsState()
+
+    val time by viewModel.time.collectAsState()
+
+    val lastArticleKey = remember(lastId) {
+        Log.d(
+            "LaunchedEffect",
+            lastId
+        )
+        lastId
+    }
+
+    LaunchedEffect(listState, lastArticleKey) {
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.map { it.key }
+        }.collect { visibleKeys ->
+            if (lastId != "-1" && visibleKeys.contains(lastArticleKey)) {
+                Log.d("LaunchedEffect", "last article is visible")
+                viewModel.processCommand(MainCommand.LoadOthersNews)
+            }
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(color = MaterialTheme.colorScheme.onSecondary)
-            .padding(paddingValues)
-            .border(BorderStroke(0.5.dp, MaterialTheme.colorScheme.onSecondary))
-    ) {
-        LazyColumn(
-            state = listState
-        ) {
-            item {
-                AppNameWithSearchBar(viewModel)
+    Scaffold(
+        topBar = {
+            Column {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            val formatter = SimpleDateFormat.getInstance()
+                            Text(
+                                text = "Explore",
+                                fontFamily = HeroFontFamily,
+                                fontWeight = FontWeight.Normal,
+                                color = Color.Black,
+                                fontSize = 19.sp,
+                                lineHeight = 10.sp
+                            )
+                            Text(
+                                text = formatter.format(time),
+                                fontFamily = HeroFontFamily,
+                                fontWeight = FontWeight.Normal,
+                                color = Color.Black,
+                                fontSize = 10.sp,
+                                lineHeight = 10.sp
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.White
+                    ),
+                    actions = {
+                        IconButton({}) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_search),
+                                contentDescription = "search icon",
+                                tint = Color.Black
+                            )
+                        }
+                        IconButton({
+                            viewModel.processCommand(MainCommand.RefreshNews)
+                        }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_refresh),
+                                contentDescription = "refresh icon",
+                                tint = Color.Black
+                            )
+                        }
+
+                    },
+                    navigationIcon = {
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .clip(
+                                    RoundedCornerShape(
+                                        topStart = 0.dp,
+                                        topEnd = 15.dp,
+                                        bottomEnd = 0.dp,
+                                        bottomStart = 15.dp
+                                    )
+                                )
+                                .background(
+                                    brush = Brush.verticalGradient(
+                                        listOf(
+                                            Color.Red,
+                                            Color(0xff61070A)
+                                        )
+                                    )
+                                )
+                        ) {
+                            Text(
+                                text = "XNews",
+                                fontFamily = HeroFontFamily,
+                                fontWeight = FontWeight.Normal,
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(
+                                    vertical = 8.dp,
+                                    horizontal = 4.dp
+                                )
+                            )
+                        }
+                    }
+                )
+                HorizontalDivider(
+                    modifier = Modifier,
+                    thickness = 0.5.dp,
+                    color = Color.Gray.copy(alpha = 0.5f)
+                )
             }
+        },
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = paddingValues.calculateTopPadding())
+                .background(color = Color.White)
+        ) {
             when (currentState) {
                 is MainState.Content -> {
-                    items(items = currentState.articles) {
-                        Box(
-                            modifier = Modifier.animateItem()
-                        ) {
-                            MySwiper(
-                                article = it,
-                                swipeActionType = SwipeActionType.ADD_TO_FAVOURITE
-                            ) {
-                                scope.launch {
-                                    val result = viewModel.addToFavourite(it).await()
-                                    when (result) {
-                                        MainViewModel.Duplicate.False -> {
-                                            viewModel.incrementNewFavouriteCount()
-                                            snackbarHostState.showSnackbar("✅ Успешно добавлено!")
-
+                    LazyColumn(
+                        state = listState
+                    ) {
+                        currentState.content.forEach { content ->
+                            if (content.isRow) {
+                                item {
+                                    TopicLabel(
+                                        topicName = content.title,
+                                        onTopicClick = {}
+                                    )
+                                }
+                                item {
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        items(
+                                            items = content.articles,
+                                            key = { it.id + it.urlToImage }
+                                        ) { article ->
+                                            HotArticleCard(
+                                                article = article,
+                                                modifier = Modifier,
+                                                onArticleClick = {
+                                                    showArticleInBrowser(article, context)
+                                                }
+                                            )
                                         }
-
-                                        MainViewModel.Duplicate.True -> {
-                                            snackbarHostState.showSnackbar("✅ Статья уже была добавлена!")
+                                    }
+                                }
+                            } else if (content.isInfinityColumn) {
+                                if (!content.isTitleInvisible) {
+                                    item {
+                                        TopicLabel(
+                                            topicName = content.title,
+                                            isButtonVisible = false,
+                                            onTopicClick = {}
+                                        )
+                                    }
+                                }
+                                items(
+                                    items = content.articles,
+                                    key = { article -> article.id }
+                                ) { article ->
+                                    Box(
+                                        modifier = Modifier.padding(16.dp)
+                                    ) {
+                                        SecondaryArticleCard(
+                                            article = article,
+                                            onArticleClick = {
+                                                showArticleInBrowser(article, context)
+                                            }
+                                        )
+                                    }
+                                }
+                            } else {
+                                item {
+                                    TopicLabel(
+                                        topicName = content.title,
+                                        onTopicClick = {}
+                                    )
+                                }
+                                item {
+                                    MainArticleCard(
+                                        article = content.articles.first(),
+                                        onArticleClick = {
+                                            showArticleInBrowser(content.articles.first(), context)
+                                        }
+                                    )
+                                }
+                                content.articles.takeLast(3).forEachIndexed { index, article ->
+                                    item(
+                                        key = article.id + article.urlToImage
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.padding(16.dp)
+                                        ) {
+                                            SecondaryArticleCard(
+                                                article = article,
+                                                onArticleClick = {
+                                                    showArticleInBrowser(article, context)
+                                                }
+                                            )
+                                        }
+                                        if (index != 2) {
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(horizontal = 16.dp),
+                                                color = Color.Gray.copy(alpha = 0.2f),
+                                                thickness = 1.dp
+                                            )
                                         }
                                     }
                                 }
                             }
                         }
-                        Log.d("HomeScreenContent", it.id.toString())
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.padding(16.dp),
+                                    color = Color(0xffFF0606)
+                                )
+                            }
+                        }
                     }
                 }
 
                 is MainState.Error -> {
-                    scope.launch {
-                        snackbarHostState.showSnackbar("❌ Что-то пошло не так...")
-                    }
+
                 }
 
-                is MainState.MainNews -> {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.background)
-                                .padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "Главные новости за последнее время",
-                                color = MaterialTheme.colorScheme.onBackground,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
-                            )
-                        }
-                    }
-                    items(items = currentState.initArticles) {
-                        Box(
-                            modifier = Modifier.animateItem()
-                        ) {
-                            MySwiper(
-                                article = it,
-                                swipeActionType = SwipeActionType.ADD_TO_FAVOURITE
-                            ) {
-                                scope.launch {
-                                    val result = viewModel.addToFavourite(it).await()
-                                    when (result) {
-                                        MainViewModel.Duplicate.False -> {
-                                            viewModel.incrementNewFavouriteCount()
-                                            snackbarHostState.showSnackbar("✅ Успешно добавлено!")
+                MainState.Initial -> {
 
-                                        }
-
-                                        MainViewModel.Duplicate.True -> {
-                                            snackbarHostState.showSnackbar("✅ Статья уже была добавлена!")
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
 
                 MainState.Loading -> {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Загрузка...")
-                        }
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color(0xffFF0606)
+                        )
                     }
                 }
-
-                MainState.Initial -> {}
             }
-        }
-        MySnackbarHost(
-            modifier = Modifier
-                .padding(10.dp)
-                .align(Alignment.BottomCenter),
-            snackbarHostState
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp),
-            contentAlignment = Alignment.BottomEnd
-        ) {
-            AnimatedFAB(
-                showFab, listState
+
+            MySnackbarHost(
+                modifier = Modifier
+                    .padding(10.dp)
+                    .align(Alignment.BottomCenter),
+                snackbarHostState
             )
         }
     }
 }
 
 @Composable
-fun AnimatedFAB(
-    showFab: Boolean,
-    listState: LazyListState
+fun TopicLabel(
+    modifier: Modifier = Modifier,
+    topicName: String,
+    isButtonVisible: Boolean = true,
+    onTopicClick: (String) -> Unit
 ) {
-    val scope = rememberCoroutineScope()
 
-    AnimatedVisibility(
-        visible = showFab,
-        enter = fadeIn() + scaleIn(),
-        exit = fadeOut() + scaleOut()
-    ) {
-        FloatingActionButton(
-            onClick = {
-                scope.launch {
-                    listState.animateScrollToItem(0)
-                }
+    Row(
+        modifier = modifier
+            .padding(16.dp)
+            .clickable {
+                onTopicClick(topicName)
             },
-            containerColor = MaterialTheme.colorScheme.onSecondary,
-            contentColor = MaterialTheme.colorScheme.secondary,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        VerticalDivider(
             modifier = Modifier
-                .padding(bottom = 16.dp)
-        ) {
-            Icon(Icons.Default.ArrowUpward, null)
+                .height(32.dp)
+                .padding(horizontal = 8.dp),
+            color = Color(0xffFF0606),
+            thickness = 3.dp
+        )
+        Text(
+            text = topicName,
+            fontFamily = HeroFontFamily,
+            fontWeight = FontWeight.Normal,
+            color = Color.Black,
+            fontSize = 18.sp
+        )
+        Spacer(modifier.weight(1f))
+        if (isButtonVisible) {
+            Text(
+                text = "Смотреть больше...",
+                fontFamily = HeroFontFamily,
+                fontWeight = FontWeight.Normal,
+                color = Color(0xffFF0606),
+                fontSize = 12.sp
+            )
         }
     }
 }
 
-@Composable
-fun AppNameWithSearchBar(
-    viewModel: MainViewModel
+private fun showArticleInBrowser(
+    article: Article,
+    context: Context
 ) {
-
-    val searchQueryState = viewModel.searchQuery.collectAsState()
-    val searchQuery = searchQueryState.value
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 10.dp, horizontal = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            "XNews",
-            style = MaterialTheme.typography.headlineLarge
-        )
-        Text(
-            "Developed by Vladusecho <3",
-            style = MaterialTheme.typography.labelSmall
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        TextField(
-            value = searchQuery,
-            onValueChange = { query ->
-                viewModel.onSearchQueryChanged(query)
-            },
-            label = { Text(text = "Введите запрос") },
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = MaterialTheme.colorScheme.background,
-                unfocusedBorderColor = Color.Transparent,
-                focusedContainerColor = MaterialTheme.colorScheme.background,
-            ),
-            singleLine = true
-        )
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        data = article.url.toUri()
     }
+    context.startActivity(intent)
 }
-
-//@Composable
-//fun BreakingNewsTicker(
-//    modifier: Modifier = Modifier
-//) {
-//    val text = "Главные новости за последнее время"
-//    var textWidth by remember { mutableFloatStateOf(0f) }
-//    var containerWidth by remember { mutableFloatStateOf(0f) }
-//
-//    // Длительность анимации (быстрее = меньше число)
-//    val duration = 7000
-//
-//    val infiniteTransition = rememberInfiniteTransition()
-//    val offsetX by infiniteTransition.animateFloat(
-//        initialValue = containerWidth, // Начинаем справа
-//        targetValue = -textWidth, // Заканчиваем слева
-//        animationSpec = infiniteRepeatable(
-//            animation = tween(duration, easing = LinearEasing),
-//            repeatMode = RepeatMode.Restart
-//        )
-//    )
-//
-//    Box(
-//        modifier = modifier
-//            .fillMaxWidth()
-//            .clipToBounds()
-//            .onSizeChanged { containerWidth = it.width.toFloat() }
-//    ) {
-//        // Измеряем ширину текста
-//        Text(
-//            text = text,
-//            color = MaterialTheme.colorScheme.onBackground,
-//            fontWeight = FontWeight.Bold,
-//            fontSize = 18.sp,
-//            modifier = Modifier
-//                .alpha(0f)
-//                .onGloballyPositioned {
-//                    textWidth = it.size.width.toFloat()
-//                }
-//        )
-//
-//        // Анимированный текст
-//        Text(
-//            text = text,
-//            color = MaterialTheme.colorScheme.onBackground,
-//            fontWeight = FontWeight.Bold,
-//            fontSize = 18.sp,
-//            modifier = Modifier
-//                .offset { IntOffset(offsetX.roundToInt(), 0) }
-//                .graphicsLayer {
-//                },
-//            maxLines = 1
-//        )
-//
-//        // Второй экземпляр для непрерывности
-//        Text(
-//            text = text,
-//            color = MaterialTheme.colorScheme.onBackground,
-//            fontWeight = FontWeight.Bold,
-//            fontSize = 18.sp,
-//            modifier = Modifier
-//                .offset { IntOffset((offsetX + textWidth + containerWidth).roundToInt(), 0) }
-//                .graphicsLayer {
-//                },
-//            maxLines = 1
-//        )
-//    }
-//}
