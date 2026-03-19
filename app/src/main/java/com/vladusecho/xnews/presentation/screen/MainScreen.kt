@@ -5,6 +5,8 @@ import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,7 +65,8 @@ import java.text.SimpleDateFormat
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreenContent(
-    viewModel: MainViewModel = hiltViewModel()
+    viewModel: MainViewModel = hiltViewModel(),
+    onMoreClick: (String) -> Unit
 ) {
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
@@ -205,7 +208,9 @@ fun HomeScreenContent(
                                 item {
                                     TopicLabel(
                                         topicName = content.title,
-                                        onTopicClick = {}
+                                        onTopicClick = {
+                                            onMoreClick(content.title)
+                                        }
                                     )
                                 }
                                 item {
@@ -233,7 +238,9 @@ fun HomeScreenContent(
                                         TopicLabel(
                                             topicName = content.title,
                                             isButtonVisible = false,
-                                            onTopicClick = {}
+                                            onTopicClick = {
+                                                onMoreClick(content.title)
+                                            }
                                         )
                                     }
                                 }
@@ -256,7 +263,9 @@ fun HomeScreenContent(
                                 item {
                                     TopicLabel(
                                         topicName = content.title,
-                                        onTopicClick = {}
+                                        onTopicClick = {
+                                            onMoreClick(content.title)
+                                        }
                                     )
                                 }
                                 item {
@@ -347,9 +356,13 @@ fun TopicLabel(
     Row(
         modifier = modifier
             .padding(16.dp)
-            .clickable {
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
                 onTopicClick(topicName)
-            },
+            }
+        ,
         verticalAlignment = Alignment.CenterVertically
     ) {
         VerticalDivider(
@@ -379,7 +392,7 @@ fun TopicLabel(
     }
 }
 
-private fun showArticleInBrowser(
+fun showArticleInBrowser(
     article: Article,
     context: Context
 ) {

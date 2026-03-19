@@ -24,15 +24,17 @@ class MainViewModel @Inject constructor(
     private val _state = MutableStateFlow<MainState>(MainState.Initial)
     val state = _state.asStateFlow()
 
-    val time = MutableStateFlow(System.currentTimeMillis())
+    private val _time = MutableStateFlow(System.currentTimeMillis())
+    val time = _time.asStateFlow()
 
-    val lastIndex = MutableStateFlow("-1")
+    private val _lastIndex = MutableStateFlow(INIT_LIST_INDEX)
+    val lastIndex = _lastIndex.asStateFlow()
 
-    val isLoadingMore = MutableStateFlow(false)
+    private val isLoadingMore = MutableStateFlow(false)
 
-    val page = MutableStateFlow(2)
+    private val page = MutableStateFlow(NEXT_PAGE)
 
-    val mainContent = MutableStateFlow(mutableListOf<MainContent>())
+    private val mainContent = MutableStateFlow(mutableListOf<MainContent>())
 
     init {
         loadArticles()
@@ -46,7 +48,7 @@ class MainViewModel @Inject constructor(
             val hotArticles = loadSomeMainArticlesUseCase("Россия", 10)
             mainContent.update { prev ->
                 (prev + MainContent(
-                    title = "Горячие новости",
+                    title = "Россия",
                     articles = hotArticles,
                     isRow = true
                 )) as MutableList<MainContent>
@@ -87,7 +89,7 @@ class MainViewModel @Inject constructor(
                     isInfinityColumn = true
                 )) as MutableList<MainContent>
             }
-            lastIndex.value = othersArticles.last().id
+            _lastIndex.value = othersArticles.last().id
             _state.value = Content(mainContent.value)
         }
     }
@@ -108,7 +110,7 @@ class MainViewModel @Inject constructor(
                                 isTitleInvisible = true
                             )) as MutableList<MainContent>
                         }
-                        lastIndex.value = othersNews.last().id
+                        _lastIndex.value = othersNews.last().id
                         _state.value = Content(mainContent.value)
                         page.value++
                         isLoadingMore.value = false
@@ -119,9 +121,16 @@ class MainViewModel @Inject constructor(
             MainCommand.RefreshNews -> {
                 loadArticles()
                 page.value = 2
-                time.value = System.currentTimeMillis()
+                _time.value = System.currentTimeMillis()
             }
         }
+    }
+
+    private companion object {
+
+        const val NEXT_PAGE = 2
+
+        const val INIT_LIST_INDEX = "-1"
     }
 }
 

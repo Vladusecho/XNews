@@ -1,6 +1,5 @@
 package com.vladusecho.xnews.presentation.model
 
-import android.R
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,7 +13,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,11 +28,13 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
+import com.vladusecho.xnews.R
 import com.vladusecho.xnews.domain.models.Article
 import com.vladusecho.xnews.presentation.state.ImgState
 
@@ -114,8 +114,9 @@ fun LoadingImageStatus(imgState: ImgState) {
                     .height(140.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    color = Color(0xffFF0606)
+                Icon(
+                    painter = painterResource(R.drawable.ic_clock),
+                    contentDescription = "loading"
                 )
             }
         }
