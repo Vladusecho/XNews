@@ -8,10 +8,11 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.vladusecho.xnews.presentation.model.Topic
+import androidx.navigation.compose.rememberNavController
 import com.vladusecho.xnews.presentation.screen.FavouriteScreen
-import com.vladusecho.xnews.presentation.screen.HomeScreenContent
+import com.vladusecho.xnews.presentation.screen.MainScreen
 import com.vladusecho.xnews.presentation.screen.MoreArticlesScreen
+import com.vladusecho.xnews.presentation.screen.SearchScreen
 
 @Composable
 fun AppNavGraph(
@@ -19,7 +20,7 @@ fun AppNavGraph(
 ) {
 
     NavHost(
-        navHostController,
+        navController = navHostController,
         startDestination = Screen.Home.route,
         enterTransition = {
             fadeIn(animationSpec = tween(durationMillis = 0))
@@ -28,14 +29,32 @@ fun AppNavGraph(
             fadeOut(animationSpec = tween(durationMillis = 0))
         }
     ) {
+        composable(Screen.Search.route) {
+            SearchScreen(
+                onBackClick = {
+                    navHostController.navigateUp()
+                }
+            )
+        }
 
         composable(Screen.Favorite.route) {
             FavouriteScreen()
         }
         composable(Screen.Home.route) {
-            HomeScreenContent(
+            MainScreen(
                 onMoreClick = {
                     navHostController.navigate(Screen.MoreArticles.createRoute(it)) {
+                        popUpTo(navHostController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        // only one same screen at the top
+                        launchSingleTop = true
+                        // save screen state after another screen
+                        restoreState = true
+                    }
+                },
+                onSearchClick = {
+                    navHostController.navigate(Screen.Search.route) {
                         popUpTo(navHostController.graph.findStartDestination().id) {
                             saveState = true
                         }

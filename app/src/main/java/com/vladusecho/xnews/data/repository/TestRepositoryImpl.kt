@@ -29,12 +29,8 @@ class TestRepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun loadArticles(query: String): List<Article> {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun loadSomeMainArticles(query: String, count: Int, page: Int): List<Article> {
-        return articles.map { it.copy(title = it.title + page.toString()) }.take(count)
+        return articles.map { it.copy(title = it.title + page.toString() + query) }.take(count)
     }
 
     override suspend fun getFavouriteArticles(): List<Article> {
@@ -52,10 +48,4 @@ class TestRepositoryImpl @Inject constructor(
     override suspend fun deleteFromFavourite(articleId: Int) {
         TODO("Not yet implemented")
     }
-
-    override suspend fun checkDuplicates(): List<String> {
-        TODO("Not yet implemented")
-    }
-
-
 }

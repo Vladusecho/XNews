@@ -7,10 +7,11 @@ sealed class Screen(
 ) {
 
     object Home: Screen(ROUTE_HOME)
-
     object Favorite: Screen(ROUTE_FAVORITE)
     object Settings: Screen(ROUTE_SETTINGS)
     object Profile: Screen(ROUTE_PROFILE)
+
+    object Search: Screen(ROUTE_SEARCH)
     object MoreArticles: Screen(ROUTE_MORE_ARTICLES) {
 
         fun createRoute(title: String): String {
@@ -29,5 +30,6 @@ sealed class Screen(
         const val ROUTE_SETTINGS = "settings"
         const val ROUTE_PROFILE = "profile"
         const val ROUTE_MORE_ARTICLES = "more_articles/{title}"
+        const val ROUTE_SEARCH = "search"
     }
 }

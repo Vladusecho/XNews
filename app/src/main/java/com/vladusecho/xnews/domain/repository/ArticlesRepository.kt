@@ -5,8 +5,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface ArticlesRepository {
 
-    suspend fun loadArticles(query: String): List<Article>
-
     suspend fun loadSomeMainArticles(query: String, count: Int, page: Int): List<Article>
 
     suspend fun getFavouriteArticles(): List<Article>
@@ -15,6 +13,4 @@ interface ArticlesRepository {
     suspend fun addToFavourite(article: Article)
 
     suspend fun deleteFromFavourite(articleId: Int)
-
-    suspend fun checkDuplicates(): List<String>
 }

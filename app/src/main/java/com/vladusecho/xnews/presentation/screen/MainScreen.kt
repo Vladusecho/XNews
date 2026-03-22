@@ -5,7 +5,6 @@ import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,9 +63,11 @@ import java.text.SimpleDateFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreenContent(
+fun MainScreen(
+    modifier: Modifier = Modifier,
     viewModel: MainViewModel = hiltViewModel(),
-    onMoreClick: (String) -> Unit
+    onMoreClick: (String) -> Unit,
+    onSearchClick: () -> Unit
 ) {
     val screenState = viewModel.state.collectAsState(MainState.Initial)
     val currentState = screenState.value
@@ -110,7 +111,7 @@ fun HomeScreenContent(
                         ) {
                             val formatter = SimpleDateFormat.getInstance()
                             Text(
-                                text = "Explore",
+                                text = "Исследуйте",
                                 fontFamily = HeroFontFamily,
                                 fontWeight = FontWeight.Normal,
                                 color = Color.Black,
@@ -131,7 +132,9 @@ fun HomeScreenContent(
                         containerColor = Color.White
                     ),
                     actions = {
-                        IconButton({}) {
+                        IconButton({
+                            onSearchClick()
+                        }) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_search),
                                 contentDescription = "search icon",
@@ -193,7 +196,7 @@ fun HomeScreenContent(
         },
     ) { paddingValues ->
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
                 .background(color = Color.White)

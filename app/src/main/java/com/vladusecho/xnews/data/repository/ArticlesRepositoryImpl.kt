@@ -17,12 +17,6 @@ class ArticlesRepositoryImpl @Inject constructor(
     private val apiService: ApiService
 ) : ArticlesRepository {
 
-    override suspend fun loadArticles(query: String): List<Article> {
-        return apiService.getArticles(query).articles.map {
-            mapperArticleDtoToArticle(it)
-        }
-    }
-
     override suspend fun loadSomeMainArticles(query: String, count: Int, page: Int): List<Article> {
         return apiService.getSomeMainArticles(query, count, page).articles.map {
             mapperArticleDtoToArticle(it)
@@ -44,7 +38,4 @@ class ArticlesRepositoryImpl @Inject constructor(
         dao.deleteFromFavourite(articleId)
     }
 
-    override suspend fun checkDuplicates(): List<String> {
-        return dao.checkDuplicates()
-    }
 }

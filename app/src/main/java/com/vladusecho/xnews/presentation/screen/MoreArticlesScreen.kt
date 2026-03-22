@@ -123,7 +123,7 @@ fun MoreArticlesScreen(
         }
     ) { paddingValues ->
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
                 .background(color = Color.White)
