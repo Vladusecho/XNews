@@ -1,6 +1,7 @@
 package com.vladusecho.xnews.presentation.activity
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -30,15 +31,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import com.vladusecho.xnews.R
 import com.vladusecho.xnews.presentation.model.HeroFontFamily
 import com.vladusecho.xnews.presentation.navigation.AppNavGraph
 import com.vladusecho.xnews.presentation.navigation.MyNavigationItem
+import com.vladusecho.xnews.presentation.navigation.NavigationState
 import com.vladusecho.xnews.presentation.navigation.Screen
+import com.vladusecho.xnews.presentation.navigation.rememberNavigationState
 import com.vladusecho.xnews.ui.theme.XNewsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -54,19 +55,19 @@ class MainActivity : ComponentActivity() {
 
             XNewsTheme {
 
-                val navController = rememberNavController()
+                val navState = rememberNavigationState()
 
                 Scaffold(
                     bottomBar = {
                         XNewsNavigationBar(
-                            navController = navController
+                            navigationState = navState
                         )
                     }
                 ) { paddingValues ->
                     Box(
                         modifier = Modifier.padding(bottom = paddingValues.calculateBottomPadding())
                     ) {
-                        AppNavGraph(navController)
+                        AppNavGraph(navState)
                     }
                 }
             }
@@ -77,11 +78,12 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun XNewsNavigationBar(
     modifier: Modifier = Modifier,
-    navController: NavHostController
+    navigationState: NavigationState
 ) {
 
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val navBackStackEntry by navigationState.navHostController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    Log.d("Route", currentRoute ?: "null")
 
     val items = listOf(
         MyNavigationItem.Home,
@@ -104,24 +106,9 @@ fun XNewsNavigationBar(
         ) {
             items.forEach { navItem ->
 
-                val icon = when (navItem.screen) {
-                    is Screen.Home -> {
-                        painterResource(R.drawable.ic_home)
-                    }
-
-                    is Screen.Favorite -> {
-                        painterResource(R.drawable.ic_bookmark)
-                    }
-
-                    is Screen.Profile -> {
-                        painterResource(R.drawable.ic_user)
-                    }
-
-                    else -> {
-                        painterResource(R.drawable.ic_settings)
-                    }
-                }
-
+                val isSelected = navBackStackEntry?.destination?.hierarchy?.any {
+                    it.route == navItem.screen.route
+                } ?: false
 
                 Column(
                     modifier = Modifier
@@ -131,30 +118,23 @@ fun XNewsNavigationBar(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
                         ) {
-                            navController.navigate(navItem.screen.route) {
-                                // only one copy of screen we can use
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                // only one same screen at the top
-                                launchSingleTop = true
-                                // save screen state after another screen
-                                restoreState = true
+                            if (!isSelected) {
+                                navigationState.navigateTo(navItem.screen.route)
                             }
                         },
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
                         modifier = Modifier.size(24.dp),
-                        painter = icon,
+                        painter = painterResource(navItem.iconId),
                         contentDescription = "",
-                        tint = if (currentRoute == navItem.screen.route) Color(0xffA41016) else Color.Black
+                        tint = if (isSelected) Color(0xffA41016) else Color.Black
                     )
                     Text(
                         text = navItem.title,
-                        color = if (currentRoute == navItem.screen.route) Color(0xffA41016) else Color.Black,
+                        color = if (isSelected) Color(0xffA41016) else Color.Black,
                         fontFamily = HeroFontFamily,
-                        fontWeight = if (currentRoute == navItem.screen.route) FontWeight.Bold else FontWeight.W500,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.W500,
                         fontSize = 12.sp
                     )
                 }

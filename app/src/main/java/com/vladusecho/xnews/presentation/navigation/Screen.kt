@@ -7,6 +7,7 @@ sealed class Screen(
 ) {
 
     object Home: Screen(ROUTE_HOME)
+    object Main: Screen(ROUTE_MAIN)
     object Favorite: Screen(ROUTE_FAVORITE)
     object Settings: Screen(ROUTE_SETTINGS)
     object Profile: Screen(ROUTE_PROFILE)
@@ -26,6 +27,7 @@ sealed class Screen(
 
     companion object {
         const val ROUTE_HOME = "home"
+        const val ROUTE_MAIN = "main"
         const val ROUTE_FAVORITE = "favorite"
         const val ROUTE_SETTINGS = "settings"
         const val ROUTE_PROFILE = "profile"
